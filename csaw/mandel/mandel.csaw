@@ -1,0 +1,46 @@
+inc "complex.csaw";
+
+num MAX_ITER = 255;
+num WIDTH = 100;
+num HEIGHT = 40;
+
+str SYMBOLS = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}()?-_+~<>i!lI;:,\"^`'. ";
+str SYMBOLS_LOW = " .:-=+*#%@";
+
+@main: num {
+
+    num xc = num(in("xc: "));
+    num yc = num(in("yc: "));
+    num size = num(in("size: "));
+
+    for (num j = 0; j < HEIGHT; j++) {
+        for (num i = 0; i < WIDTH; i++) {
+            num x0 = xc - size / 2 + size * i / WIDTH;
+            num y0 = yc - size / 2 + size * j / HEIGHT;
+            complex z0 = complex(x0, y0);
+            num n = mandel(z0, MAX_ITER) / MAX_ITER;
+            out("%c", symbol(n));
+        }
+        out("%n");
+    }
+
+    ret 0;
+}
+
+@min: num (a: num, b: num) { ret a < b ? a : b; }
+@max: num (a: num, b: num) { ret a > b ? a : b; }
+
+@symbol: chr (n: num) {
+    num length = SYMBOLS.length();
+    n = max(min(n * (length - 1), length - 1), 0);
+    ret SYMBOLS.at(n);
+}
+
+@mandel: num (z0: complex, max: num) {
+    complex z = z0;
+    for (num t = 0; t < max; t++) {
+        if (z.abs() > 2.0) ret t;
+        z = z.square() + z0;
+    }
+    ret max;
+}

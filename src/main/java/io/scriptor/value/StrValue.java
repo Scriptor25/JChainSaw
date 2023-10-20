@@ -4,8 +4,21 @@ public class StrValue extends Value {
 
     private String mValue;
 
+    public StrValue() {
+        mValue = "";
+    }
+
     public StrValue(String value) {
         mValue = value;
+    }
+
+    public String getValue() {
+        return mValue;
+    }
+
+    @Override
+    public String getType() {
+        return Value.TYPE_STR;
     }
 
     @Override

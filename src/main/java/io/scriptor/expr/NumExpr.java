@@ -8,6 +8,10 @@ public class NumExpr extends Expr {
         this.value = Double.parseDouble(value);
     }
 
+    public NumExpr(double value) {
+        this.value = value;
+    }
+
     @Override
     public String toString() {
         return Double.toString(value);

@@ -10,14 +10,24 @@ import java.util.Vector;
 import io.scriptor.expr.AssignExpr;
 import io.scriptor.expr.BinExpr;
 import io.scriptor.expr.CallExpr;
+import io.scriptor.expr.ChrExpr;
+import io.scriptor.expr.ConExpr;
 import io.scriptor.expr.Expr;
 import io.scriptor.expr.IdExpr;
+import io.scriptor.expr.MemExpr;
 import io.scriptor.expr.NumExpr;
 import io.scriptor.expr.StrExpr;
+import io.scriptor.expr.UnExpr;
+import io.scriptor.stmt.ForStmt;
 import io.scriptor.stmt.FunStmt;
 import io.scriptor.stmt.IfStmt;
+import io.scriptor.stmt.IncStmt;
 import io.scriptor.stmt.RetStmt;
 import io.scriptor.stmt.Stmt;
+import io.scriptor.stmt.SwitchStmt;
+import io.scriptor.stmt.ThingStmt;
+import io.scriptor.stmt.VarStmt;
+import io.scriptor.stmt.WhileStmt;
 
 public class Parser {
 
@@ -25,6 +35,7 @@ public class Parser {
         IDENTIFIER,
         NUMBER,
         STRING,
+        CHAR,
         OPERATOR,
         EOF
     }
@@ -47,21 +58,29 @@ public class Parser {
         public static Token EOF() {
             return new Token().type(TokenType.EOF);
         }
+
+        @Override
+        public String toString() {
+            return String.format("[ '%s' -> %s ]", value, type);
+        }
     }
 
     private final BufferedReader mReader;
+    private final Environment mEnvironment;
     private Token mToken;
 
-    public Parser(InputStream stream) throws IOException {
+    public Parser(InputStream stream, Environment env) throws IOException {
         mReader = new BufferedReader(new InputStreamReader(stream));
-
-        final var env = new Environment();
+        mEnvironment = env;
 
         next(); // prepare first token
-        while (mToken.type != TokenType.EOF)
-            Interpreter.evaluate(env, nextStmt());
-
-        System.out.println(Interpreter.evaluate(env, env.getFunction("main")));
+        while (mToken.type != TokenType.EOF) {
+            final var stmt = nextStmt(true);
+            System.out.println(stmt);
+            /* final var value = */
+            Interpreter.evaluate(env, stmt);
+            // System.out.println(value);
+        }
     }
 
     private Token next() throws IOException {
@@ -109,6 +128,32 @@ public class Parser {
             final var builder = new StringBuilder();
             c = mReader.read();
             while (c != '"' && c >= 0) {
+                if (c == '\\') {
+                    c = mReader.read();
+                    switch (c) {
+                        case 't':
+                            builder.append('\t');
+                            c = mReader.read();
+                            continue;
+                        case 'r':
+                            builder.append('\r');
+                            c = mReader.read();
+                            continue;
+                        case 'n':
+                            builder.append('\n');
+                            c = mReader.read();
+                            continue;
+                        case 'f':
+                            builder.append('\f');
+                            c = mReader.read();
+                            continue;
+                        case 'b':
+                            builder.append('\b');
+                            c = mReader.read();
+                            continue;
+                    }
+                }
+
                 builder.append((char) c);
                 c = mReader.read();
             }
@@ -116,7 +161,45 @@ public class Parser {
             return mToken = new Token().type(TokenType.STRING).value(builder.toString());
         }
 
+        if (c == '\'') {
+            final var builder = new StringBuilder();
+            c = mReader.read();
+            while (c != '\'' && c >= 0) {
+                if (c == '\\') {
+                    c = mReader.read();
+                    switch (c) {
+                        case 't':
+                            builder.append('\t');
+                            c = mReader.read();
+                            continue;
+                        case 'r':
+                            builder.append('\r');
+                            c = mReader.read();
+                            continue;
+                        case 'n':
+                            builder.append('\n');
+                            c = mReader.read();
+                            continue;
+                        case 'f':
+                            builder.append('\f');
+                            c = mReader.read();
+                            continue;
+                        case 'b':
+                            builder.append('\b');
+                            c = mReader.read();
+                            continue;
+                    }
+                }
+
+                builder.append((char) c);
+                c = mReader.read();
+            }
+
+            return mToken = new Token().type(TokenType.CHAR).value(builder.toString());
+        }
+
         return mToken = new Token().type(TokenType.OPERATOR).value(Character.toString(c));
+
     }
 
     private static boolean isIgnorable(int c) {
@@ -136,58 +219,173 @@ public class Parser {
     }
 
     private boolean at(String value) {
-        return mToken != null && mToken.value != null && mToken.value.equals(value);
+        return !eof() && mToken.value.equals(value);
     }
 
-    private Stmt nextStmt() throws IOException {
+    private boolean at(TokenType type) {
+        return !eof() && mToken.type == type;
+    }
+
+    private boolean expect(String value) {
+        if (at(value))
+            return true;
+        throw new IllegalStateException(String.format("unexpected token %s, expected value '%s'", mToken, value));
+    }
+
+    private boolean expect(TokenType type) {
+        if (at(type))
+            return true;
+        throw new IllegalStateException(String.format("unexpected token %s, expected type %s", mToken, type));
+    }
+
+    private boolean expectAndNext(String value) throws IOException {
+        expect(value);
+        next();
+        return true;
+    }
+
+    private boolean expectAndNext(TokenType type) throws IOException {
+        expect(type);
+        next();
+        return true;
+    }
+
+    private boolean eof() {
+        return mToken == null || mToken.type == TokenType.EOF;
+    }
+
+    private Stmt nextStmt(boolean semicolon) throws IOException {
+
+        if (at("for"))
+            return nextForStmt(semicolon);
+
+        if (at("@") || at("$"))
+            return nextFunStmt(semicolon);
 
         if (at("if"))
-            return nextIfStmt();
+            return nextIfStmt(semicolon);
+
+        if (at("inc"))
+            return nextIncStmt(semicolon);
 
         if (at("ret"))
-            return nextRetStmt();
+            return nextRetStmt(semicolon);
 
-        if (at("@"))
-            return nextFunStmt();
+        if (at("switch"))
+            return nextSwitchStmt();
+
+        if (at("thing"))
+            return nextThingStmt(semicolon);
+
+        if (at("while"))
+            return nextWhileStmt(semicolon);
 
         final var expr = nextExpr();
-        next(); // skip ;
+
+        final var stmt = nextVarStmt(expr, semicolon);
+        if (stmt != null)
+            return stmt;
+
+        if (semicolon)
+            expectAndNext(";"); // skip ;
 
         return expr;
     }
 
     private Stmt[] nextEnclosedStmt() throws IOException {
-        next(); // skip {
+        expectAndNext("{"); // skip {
 
         final List<Stmt> enclosed = new Vector<>();
-        do {
-            enclosed.add(nextStmt());
-        } while (!at("}"));
+        while (!eof() && !at("}")) {
+            enclosed.add(nextStmt(true));
+        }
 
-        next(); // skip }
+        expectAndNext("}"); // skip }
 
         return enclosed.toArray(new Stmt[0]);
     }
 
-    private FunStmt nextFunStmt() throws IOException {
+    private ForStmt nextForStmt(boolean semicolon) throws IOException {
+        final var stmt = new ForStmt();
+
+        expectAndNext("for"); // skip "for"
+        expectAndNext("("); // skip (
+        if (!at(";"))
+            stmt.begin = nextStmt(true);
+        else
+            next(); // skip ;
+        stmt.condition = nextExpr();
+        expectAndNext(";"); // skip ;
+        if (!at(")"))
+            stmt.loop = nextStmt(false);
+        expectAndNext(")"); // skip )
+
+        if (at("{"))
+            stmt.body = nextEnclosedStmt();
+        else
+            stmt.body = new Stmt[] { nextStmt(semicolon) };
+
+        return stmt;
+    }
+
+    private FunStmt nextFunStmt(boolean semicolon) throws IOException {
         final var stmt = new FunStmt();
-        stmt.name = next().value;
-        next(); // :
-        stmt.type = next().value;
-        next(); // ( -> params | { -> impl | ; -> end
+
+        stmt.constructor = at("$");
+        if (stmt.constructor)
+            next(); // skip $
+        else
+            expectAndNext("@"); // skip @
+
+        if (at("(")) { // override operator
+            next(); // skip (
+            stmt.name = "";
+            while (!eof() && !at(")")) { // at least one character
+                stmt.name += mToken.value;
+                expectAndNext(TokenType.OPERATOR); // skip operator
+            }
+            expectAndNext(")"); // skip )
+        } else {
+            stmt.name = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER); // skip name
+        }
+
+        if (stmt.constructor) {
+            stmt.type = stmt.name;
+        } else if (at(":")) {
+            next(); // skip :
+            stmt.type = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER); // skip type
+        }
 
         if (at("(")) {
             final List<Parameter> parameters = new Vector<>();
-            next(); // skip (
-            do {
+            expectAndNext("("); // skip (
+            while (!eof() && !at(")")) {
                 final var param = new Parameter();
                 param.name = mToken.value;
-                next(); // :
-                param.type = next().value;
+                expectAndNext(TokenType.IDENTIFIER); // skip name
+                expectAndNext(":"); // skip :
+                param.type = mToken.value;
+                expectAndNext(TokenType.IDENTIFIER); // skip type
                 parameters.add(param);
-            } while (next().value.equals(","));
-            next(); // skip )
+                if (!at(")"))
+                    expectAndNext(","); // skip ,
+            }
+            expectAndNext(")"); // skip )
             stmt.parameters = parameters.toArray(new Parameter[0]);
+        }
+
+        if (at("$")) {
+            next(); // skip $
+            stmt.vararg = true;
+        }
+
+        if (at("-")) {
+            next(); // skip -
+            expectAndNext(">"); // skip >
+            stmt.member = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER); // skip member
         }
 
         if (at(";")) {
@@ -195,45 +393,182 @@ public class Parser {
             return stmt;
         }
 
-        stmt.implementation = nextEnclosedStmt();
+        stmt.body = nextEnclosedStmt();
 
         return stmt;
     }
 
-    private IfStmt nextIfStmt() throws IOException {
+    private IfStmt nextIfStmt(boolean semicolon) throws IOException {
         final var stmt = new IfStmt();
 
-        next(); // (
-        next(); // skip (
+        expectAndNext("if"); // skip "if"
+        expectAndNext("("); // skip (
         stmt.condition = nextExpr();
-        next(); // skip )
+        expectAndNext(")"); // skip )
+
         if (at("{"))
-            stmt.thenStmt = nextEnclosedStmt();
+            stmt.thenBody = nextEnclosedStmt();
         else
-            stmt.thenStmt = new Stmt[] { nextStmt() };
+            stmt.thenBody = new Stmt[] { nextStmt(semicolon) };
+
         if (at("else")) {
             next(); // skip "else"
             if (at("{"))
-                stmt.elseStmt = nextEnclosedStmt();
+                stmt.elseBody = nextEnclosedStmt();
             else
-                stmt.elseStmt = new Stmt[] { nextStmt() };
+                stmt.elseBody = new Stmt[] { nextStmt(semicolon) };
         }
 
         return stmt;
     }
 
-    private RetStmt nextRetStmt() throws IOException {
-        final var stmt = new RetStmt();
+    private IncStmt nextIncStmt(boolean semicolon) throws IOException {
+        final var stmt = new IncStmt();
 
-        next(); // skip "ret"
-        stmt.value = nextExpr();
-        next(); // skip ;
+        expectAndNext("inc"); // skip "inc"
+        stmt.path = mToken.value;
+        expectAndNext(TokenType.STRING); // skip path
+        expectAndNext(";"); // skip ;
 
         return stmt;
     }
 
+    private RetStmt nextRetStmt(boolean semicolon) throws IOException {
+        final var stmt = new RetStmt();
+
+        expectAndNext("ret"); // skip "ret"
+        stmt.value = nextExpr();
+        expectAndNext(";"); // skip ;
+
+        return stmt;
+    }
+
+    private SwitchStmt nextSwitchStmt() throws IOException {
+        final var stmt = new SwitchStmt();
+
+        expectAndNext("switch"); // skip "switch"
+        expectAndNext("("); // skip (
+        stmt.switcher = nextExpr();
+        expectAndNext(")"); // skip )
+        expectAndNext("{"); // skip {
+        while (!eof() && !at("}")) {
+            if (at("default")) {
+                next(); // skip "default"
+                expectAndNext(":"); // skip :
+                stmt.defaultCase = at("{")
+                        ? nextEnclosedStmt()
+                        : new Stmt[] { nextStmt(true) };
+                continue;
+            }
+
+            expectAndNext("case"); // skip "case"
+            final var caseExpr = nextExpr();
+            expectAndNext(":"); // skip :
+            final var body = at("{")
+                    ? nextEnclosedStmt()
+                    : new Stmt[] { nextStmt(true) };
+
+            stmt.cases.put(Interpreter.evaluate(mEnvironment, caseExpr), body);
+        }
+        expectAndNext("}"); // skip }
+
+        return stmt;
+    }
+
+    private ThingStmt nextThingStmt(boolean semicolon) throws IOException {
+        final var stmt = new ThingStmt();
+
+        expectAndNext("thing"); // skip "thing"
+        expectAndNext(":"); // skip :
+        stmt.name = mToken.value;
+        expectAndNext(TokenType.IDENTIFIER); // skip name
+
+        if (at(":")) {
+            next(); // skip :
+            stmt.group = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER);
+        }
+
+        if (at(";")) {
+            next(); // skip ;
+            return stmt;
+        }
+
+        final List<Parameter> fields = new Vector<>();
+        expectAndNext("{"); // skip {
+        while (!eof() && !at("}")) {
+            final var param = new Parameter();
+            param.name = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER); // skip name
+            expectAndNext(":"); // skip :
+            param.type = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER); // skip type
+            fields.add(param);
+            if (!at("}"))
+                expectAndNext(","); // skip ,
+        }
+        expectAndNext("}"); // skip }
+        stmt.fields = fields.toArray(new Parameter[0]);
+
+        return stmt;
+    }
+
+    private WhileStmt nextWhileStmt(boolean semicolon) throws IOException {
+        final var stmt = new WhileStmt();
+
+        expectAndNext("while"); // skip "while"
+        expectAndNext("("); // skip (
+        stmt.condition = nextExpr();
+        expectAndNext(")"); // skip )
+        if (at("{"))
+            stmt.body = nextEnclosedStmt();
+        else
+            stmt.body = new Stmt[] { nextStmt(semicolon) };
+
+        return stmt;
+    }
+
+    private VarStmt nextVarStmt(Expr type, boolean semicolon) throws IOException {
+        if (type instanceof IdExpr && at(TokenType.IDENTIFIER)) {
+            final var varExpr = new VarStmt();
+            varExpr.type = ((IdExpr) type).name;
+            varExpr.name = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER); // skip name
+
+            if (at(";")) {
+                next();
+                return varExpr;
+            }
+
+            expectAndNext("="); // skip =
+            varExpr.value = nextExpr();
+            if (semicolon)
+                expectAndNext(";"); // skip ;
+            return varExpr;
+        }
+
+        return null;
+    }
+
     private Expr nextExpr() throws IOException {
-        return nextBinExprAnd();
+        return nextConExpr();
+    }
+
+    private Expr nextConExpr() throws IOException {
+        var expr = nextBinExprAnd();
+
+        while (at("?")) {
+            final var conExpr = new ConExpr();
+            conExpr.condition = expr;
+            next(); // skip ?
+            conExpr.thenExpr = nextExpr();
+            expectAndNext(":"); // skip :
+            conExpr.elseExpr = nextExpr();
+
+            expr = conExpr;
+        }
+
+        return expr;
     }
 
     private Expr nextBinExprAnd() throws IOException {
@@ -245,20 +580,18 @@ public class Parser {
             binExpr.operator = mToken.value;
 
             next(); // skip operator
-            boolean assign = at("=");
-            if (assign)
-                next();
-            else if (at("&")) {
+            if (at("=")) {
+                next(); // skip =
+                binExpr.right = nextExpr();
+                expr = new AssignExpr(expr, binExpr);
+                continue;
+            } else if (at("&")) {
                 binExpr.operator += mToken.value;
                 next(); // skip operator
             }
 
             binExpr.right = nextBinExprOr();
-
-            if (assign)
-                expr = new AssignExpr(((IdExpr) binExpr.left).name, binExpr);
-            else
-                expr = binExpr;
+            expr = binExpr;
         }
 
         return expr;
@@ -273,20 +606,18 @@ public class Parser {
             binExpr.operator = mToken.value;
 
             next(); // skip operator
-            boolean assign = at("=");
-            if (assign)
-                next();
-            else if (at("|")) {
+            if (at("=")) {
+                next(); // skip =
+                binExpr.right = nextExpr();
+                expr = new AssignExpr(expr, binExpr);
+                continue;
+            } else if (at("|")) {
                 binExpr.operator += mToken.value;
                 next(); // skip operator
             }
 
             binExpr.right = nextBinExprCmp();
-
-            if (assign)
-                expr = new AssignExpr(((IdExpr) binExpr.left).name, binExpr);
-            else
-                expr = binExpr;
+            expr = binExpr;
         }
 
         return expr;
@@ -295,25 +626,24 @@ public class Parser {
     private Expr nextBinExprCmp() throws IOException {
         var expr = nextBinExprSum();
 
-        while (at("=") || at("<") || at(">")) {
+        while (at("=") || at("!") || at("<") || at(">")) {
             final var binExpr = new BinExpr();
             binExpr.left = expr;
             binExpr.operator = mToken.value;
 
             next(); // skip operator
-            boolean assign = false;
             if (at("=")) {
                 binExpr.operator += mToken.value;
                 next(); // skip operator
-            } else if (binExpr.operator.equals("="))
-                assign = true;
+            }
+
+            if (binExpr.operator.equals("=")) {
+                expr = new AssignExpr(expr, nextExpr());
+                continue;
+            }
 
             binExpr.right = nextBinExprSum();
-
-            if (assign)
-                expr = new AssignExpr(((IdExpr) binExpr.left).name, binExpr.right);
-            else
-                expr = binExpr;
+            expr = binExpr;
         }
 
         return expr;
@@ -328,16 +658,20 @@ public class Parser {
             binExpr.operator = mToken.value;
 
             next(); // skip operator
-            boolean assign = at("=");
-            if (assign)
+            if (at("=")) {
                 next(); // skip operator
+                binExpr.right = nextExpr();
+                expr = new AssignExpr(expr, binExpr);
+                continue;
+            } else if (at(binExpr.operator)) {
+                next(); // skip operator
+                binExpr.right = new NumExpr(1);
+                expr = new AssignExpr(expr, binExpr);
+                continue;
+            }
 
             binExpr.right = nextBinExprPro();
-
-            if (assign)
-                expr = new AssignExpr(((IdExpr) binExpr.left).name, binExpr);
-            else
-                expr = binExpr;
+            expr = binExpr;
         }
 
         return expr;
@@ -352,53 +686,113 @@ public class Parser {
             binExpr.operator = mToken.value;
 
             next(); // skip operator
-            boolean assign = at("=");
-            if (assign)
+            if (at("=")) {
                 next(); // skip operator
+                binExpr.right = nextExpr();
+                expr = new AssignExpr(expr, binExpr);
+                continue;
+            }
 
             binExpr.right = nextCallExpr();
-
-            if (assign)
-                expr = new AssignExpr(((IdExpr) binExpr.left).name, binExpr);
-            else
-                expr = binExpr;
+            expr = binExpr;
         }
 
         return expr;
     }
 
     private Expr nextCallExpr() throws IOException {
-        var expr = nextPrimExpr();
+        var expr = nextMemExpr();
 
-        if (at("(")) {
+        while (at("(")) {
             final var callExpr = new CallExpr();
-            callExpr.function = ((IdExpr) expr).name;
+            callExpr.function = expr;
 
             final List<Expr> arguments = new Vector<>();
-            do {
-                next();
+            next(); // skip (
+            while (!eof() && !at(")")) {
                 arguments.add(nextExpr());
-            } while (at(","));
-            next(); // skip )
+                if (!at(")"))
+                    expectAndNext(","); // skip ,
+            }
+            expectAndNext(")"); // skip )
             callExpr.arguments = arguments.toArray(new Expr[0]);
 
             expr = callExpr;
+
+            if (at("."))
+                expr = nextMemExpr(expr);
+        }
+
+        return expr;
+    }
+
+    private Expr nextMemExpr() throws IOException {
+        return nextMemExpr(nextPrimExpr());
+    }
+
+    private Expr nextMemExpr(Expr expr) throws IOException {
+        while (at(".")) {
+            final var memExpr = new MemExpr();
+            memExpr.object = expr;
+            next(); // skip .
+            memExpr.member = ((IdExpr) nextPrimExpr()).name;
+
+            expr = memExpr;
         }
 
         return expr;
     }
 
     private Expr nextPrimExpr() throws IOException {
+        if (eof())
+            return null;
 
-        var expr = switch (mToken.type) {
-            case IDENTIFIER -> new IdExpr(mToken.value);
-            case NUMBER -> new NumExpr(mToken.value);
-            case STRING -> new StrExpr(mToken.value);
-            default -> null;
-        };
+        switch (mToken.type) {
+            case IDENTIFIER: {
+                final var expr = new IdExpr(mToken.value);
+                next(); // skip id
+                return expr;
+            }
+            case NUMBER: {
+                final var expr = new NumExpr(mToken.value);
+                next(); // skip num
+                return expr;
+            }
+            case STRING: {
+                final var expr = new StrExpr(mToken.value);
+                next(); // skip str
+                return expr;
+            }
+            case CHAR: {
+                final var expr = new ChrExpr(mToken.value.charAt(0));
+                next(); // skip chr
+                return expr;
+            }
+            default:
+                break;
+        }
 
-        next();
+        switch (mToken.value) {
+            case "(": {
+                next(); // skip (
+                final var expr = nextExpr();
+                expectAndNext(")"); // skip )
+                return expr;
+            }
+            case "-": {
+                next(); // skip -
+                return new UnExpr("-", nextExpr());
+            }
+            case "!": {
+                next(); // skip !
+                return new UnExpr("!", nextExpr());
+            }
+            case "~": {
+                next(); // skip ~
+                return new UnExpr("~", nextExpr());
+            }
+        }
 
-        return expr;
+        throw new IllegalStateException(String.format("unhandled token %s", mToken));
     }
 }

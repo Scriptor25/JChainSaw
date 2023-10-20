@@ -1,0 +1,89 @@
+## Constants
+ num infinity = inf();            ## Max num Value
+ num pi = 3.1415926535897932385;  ## PI
+
+## Boolean
+ num false = 0;                   ## Boolean False
+ num true = 1;                    ## Boolean True
+
+## Utility Functions
+
+@degrees_to_radians: num (degrees: num) {
+    ret degrees * pi / 180;
+}
+
+@linear_to_gamma: num (linear_component: num) {
+    ret sqrt(linear_component);
+}
+
+@random: num (min: num, max: num) {
+    ret min + (max - min) * random();
+}
+
+@min: num (a: num, b: num) {
+    ret a < b ? a : b;
+}
+
+@progress_bar: str (message: str, length: num, percentage: num) {
+    chr off = '_';
+    chr on = '#';
+    str bar = message + " (";
+
+    str label = " " + floor(percentage * 100) + "% ";
+
+    num progress = percentage * length;
+    num label_start = (length - label.length()) * 0.5;
+    num label_end = (length + label.length()) * 0.5;
+
+    num i = 0;
+    for (; i < min(progress, label_start); i++)
+        bar += on;
+    for(; i < label_start; i++)
+        bar += off;
+    for(; i < label_end; i++)
+        bar += label.at(i - label_start);
+    for (; i < progress; i++)
+        bar += on;
+    for(; i < length; i++)
+        bar += off;
+    
+    ret bar += ")";
+}
+
+# Write Color To File Stream #
+@write_color (f: file, pixel_color: vec3, samples_per_pixel: num) {
+    num r = pixel_color.x();
+    num g = pixel_color.y();
+    num b = pixel_color.z();
+
+    ## Divide the color by the num of samples.
+    num scale = 1.0 / samples_per_pixel;
+    r *= scale;
+    g *= scale;
+    b *= scale;
+
+    ## Apply the linear to gamma transform.
+    r = linear_to_gamma(r);
+    g = linear_to_gamma(g);
+    b = linear_to_gamma(b);
+
+    ## Write the translated (0,255) value of each color component.
+    f.out(
+        "%s %s %s%n",
+        floor(256 * intensity.clamp(r)),
+        floor(256 * intensity.clamp(g)),
+        floor(256 * intensity.clamp(b))
+    );
+}
+
+## Includes
+ inc "vec3.csaw";
+ inc "ray.csaw";
+ inc "hit_record.csaw";
+ inc "sphere.csaw";
+ inc "hittable_list.csaw";
+ inc "interval.csaw";
+ inc "camera.csaw";
+ inc "lambertian.csaw";
+ inc "metal.csaw";
+ inc "dielectric.csaw";

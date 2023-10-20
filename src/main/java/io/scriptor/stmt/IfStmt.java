@@ -5,23 +5,23 @@ import io.scriptor.expr.Expr;
 public class IfStmt extends Stmt {
 
     public Expr condition;
-    public Stmt[] thenStmt;
-    public Stmt[] elseStmt;
+    public Stmt[] thenBody;
+    public Stmt[] elseBody;
 
     @Override
     public String toString() {
         final var thenBuilder = new StringBuilder().append("{\n");
-        for (final var stmt : thenStmt)
+        for (final var stmt : thenBody)
             thenBuilder.append("\t").append(stmt).append("\n");
         thenBuilder.append("}");
 
         final var elseBuilder = new StringBuilder().append("{\n");
-        if (elseStmt != null)
-            for (final var stmt : elseStmt)
+        if (elseBody != null)
+            for (final var stmt : elseBody)
                 elseBuilder.append("\t").append(stmt).append("\n");
         elseBuilder.append("}");
 
         return String.format("if (%s) %s%s", condition, thenBuilder,
-                elseStmt != null ? (" else " + elseBuilder.toString()) : "");
+                elseBody != null ? (" else " + elseBuilder.toString()) : "");
     }
 }

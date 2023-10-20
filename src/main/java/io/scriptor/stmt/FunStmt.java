@@ -4,25 +4,29 @@ import io.scriptor.Parameter;
 
 public class FunStmt extends Stmt {
 
+    public boolean constructor;
     public String name;
     public String type;
     public Parameter[] parameters;
-    public Stmt[] implementation;
+    public boolean vararg;
+    public String member;
+    public Stmt[] body;
 
     @Override
     public String toString() {
-        final var builder = new StringBuilder();
+        final var paramBuilder = new StringBuilder();
         for (int i = 0; i < (parameters == null ? 0 : parameters.length); i++) {
             if (i > 0)
-                builder.append(", ");
-            builder.append(parameters[i]);
+                paramBuilder.append(", ");
+            paramBuilder.append(parameters[i]);
         }
 
-        final var implBuilder = new StringBuilder().append("{\n");
-        for (final var stmt : implementation)
-            implBuilder.append("\t").append(stmt).append("\n");
-        implBuilder.append("}");
+        final var bodyBuilder = new StringBuilder().append("{\n");
+        for (final var stmt : body)
+            bodyBuilder.append("\t").append(stmt).append("\n");
+        bodyBuilder.append("}");
 
-        return String.format("@%s: %s (%s) %s", name, type, builder, implBuilder);
+        return String.format("%s%s: %s (%s)%s%s %s", constructor ? "$" : "@", name, type, paramBuilder,
+                vararg ? " $" : "", member != null ? " -> " + member : "", bodyBuilder);
     }
 }

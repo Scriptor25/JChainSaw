@@ -4,6 +4,10 @@ public class NumValue extends Value {
 
     private double mValue;
 
+    public NumValue() {
+        mValue = 0;
+    }
+
     public NumValue(double value) {
         mValue = value;
     }
@@ -12,8 +16,13 @@ public class NumValue extends Value {
         mValue = value ? 1 : 0;
     }
 
-    public double getValue() {
+    public Double getValue() {
         return mValue;
+    }
+
+    @Override
+    public String getType() {
+        return Value.TYPE_NUM;
     }
 
     @Override
@@ -34,7 +43,7 @@ public class NumValue extends Value {
 
     @Override
     public String toString() {
-        return Double.toString(mValue);
+        return mValue == Math.floor(mValue) ? Long.toString((long) mValue) : Double.toString(mValue);
     }
 
 }

@@ -2,16 +2,16 @@ package io.scriptor.expr;
 
 public class AssignExpr extends Expr {
 
-    public String id;
+    public Expr object;
     public Expr value;
 
-    public AssignExpr(String id, Expr value) {
-        this.id = id;
+    public AssignExpr(Expr object, Expr value) {
+        this.object = object;
         this.value = value;
     }
 
     @Override
     public String toString() {
-        return String.format("%s = %s", id, value);
+        return String.format("%s = %s", object, value);
     }
 }

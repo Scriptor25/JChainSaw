@@ -2,7 +2,7 @@ package io.scriptor.expr;
 
 public class CallExpr extends Expr {
 
-    public String function;
+    public Expr function;
     public Expr[] arguments;
 
     @Override
