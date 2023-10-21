@@ -34,4 +34,9 @@ public class ListValue extends Value {
         return !mValues.isEmpty();
     }
 
+    @Override
+    public String toString() {
+        return mValues.toString();
+    }
+
 }

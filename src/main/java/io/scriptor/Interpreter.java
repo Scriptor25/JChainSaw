@@ -3,10 +3,12 @@ package io.scriptor;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.stream.IntStream;
 
 import io.scriptor.expr.AssignExpr;
 import io.scriptor.expr.BinExpr;
 import io.scriptor.expr.CallExpr;
+import io.scriptor.expr.ChrExpr;
 import io.scriptor.expr.ConExpr;
 import io.scriptor.expr.Expr;
 import io.scriptor.expr.IdExpr;
@@ -14,15 +16,18 @@ import io.scriptor.expr.MemExpr;
 import io.scriptor.expr.NumExpr;
 import io.scriptor.expr.StrExpr;
 import io.scriptor.expr.UnExpr;
+import io.scriptor.stmt.AliasStmt;
 import io.scriptor.stmt.ForStmt;
 import io.scriptor.stmt.FunStmt;
 import io.scriptor.stmt.IfStmt;
 import io.scriptor.stmt.IncStmt;
+import io.scriptor.stmt.ParStmt;
 import io.scriptor.stmt.RetStmt;
 import io.scriptor.stmt.Stmt;
 import io.scriptor.stmt.ThingStmt;
 import io.scriptor.stmt.VarStmt;
 import io.scriptor.stmt.WhileStmt;
+import io.scriptor.value.ChrValue;
 import io.scriptor.value.NumValue;
 import io.scriptor.value.ObjValue;
 import io.scriptor.value.StrValue;
@@ -34,6 +39,11 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, Stmt stmt) {
+        if (stmt == null)
+            return null;
+
+        if (stmt instanceof AliasStmt)
+            return evaluate(env, (AliasStmt) stmt);
         if (stmt instanceof ForStmt)
             return evaluate(env, (ForStmt) stmt);
         if (stmt instanceof FunStmt)
@@ -42,6 +52,8 @@ public class Interpreter {
             return evaluate(env, (IfStmt) stmt);
         if (stmt instanceof IncStmt)
             return evaluate(env, (IncStmt) stmt);
+        if (stmt instanceof ParStmt)
+            return evaluate(env, (ParStmt) stmt);
         if (stmt instanceof RetStmt)
             return evaluate(env, (RetStmt) stmt);
         if (stmt instanceof ThingStmt)
@@ -55,6 +67,11 @@ public class Interpreter {
             return evaluate(env, (Expr) stmt);
 
         throw new RuntimeException();
+    }
+
+    public static Value evaluate(Environment env, AliasStmt stmt) {
+        env.createAlias(stmt.alias, stmt.origin);
+        return null;
     }
 
     public static Value evaluate(Environment env, ForStmt stmt) {
@@ -109,11 +126,39 @@ public class Interpreter {
         final var path = env.getPath();
         final var file = new File(path, stmt.path);
         try {
-            new Parser(new FileInputStream(file), env.setPath(file.getParent()));
+            final var parser = new Parser(new FileInputStream(file), env.setPath(file.getParent()));
+            parser.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
         env.setPath(path);
+
+        return null;
+    }
+
+    public static Value evaluate(Environment env, ParStmt stmt) {
+
+        final var from = (int) (double) ((NumValue) evaluate(env, stmt.from)).getValue();
+        final var length = (int) (double) ((NumValue) evaluate(env, stmt.length)).getValue();
+
+        IntStream.range(from, from + length)
+                .parallel()
+                .forEach(i -> {
+                    while (true) {
+                        try {
+                            final var environment = new Environment(env);
+                            environment.createVariable(stmt.variable, Value.TYPE_NUM, new NumValue(i));
+                            for (final var s : stmt.body) {
+                                final var value = evaluate(environment, s);
+                                if (value != null && value.isReturn())
+                                    break;
+                            }
+                            break;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
 
         return null;
     }
@@ -161,6 +206,8 @@ public class Interpreter {
             return evaluate(env, (BinExpr) expr);
         if (expr instanceof CallExpr)
             return evaluate(env, (CallExpr) expr);
+        if (expr instanceof ChrExpr)
+            return evaluate(env, (ChrExpr) expr);
         if (expr instanceof ConExpr)
             return evaluate(env, (ConExpr) expr);
         if (expr instanceof IdExpr)
@@ -236,10 +283,14 @@ public class Interpreter {
         return fun.body.invoke(member, env, args);
     }
 
+    public static Value evaluate(Environment env, ChrExpr expr) {
+        return new ChrValue(expr.value);
+    }
+
     public static Value evaluate(Environment env, ConExpr expr) {
         return evaluate(env, expr.condition).asBoolean()
                 ? evaluate(env, expr.thenExpr)
-                : evaluate(env, expr.thenExpr);
+                : evaluate(env, expr.elseExpr);
     }
 
     public static Value evaluate(Environment env, IdExpr expr) {

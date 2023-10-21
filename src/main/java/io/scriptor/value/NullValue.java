@@ -23,4 +23,9 @@ public class NullValue extends Value {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return String.format("null [%s]", mType);
+    }
+
 }

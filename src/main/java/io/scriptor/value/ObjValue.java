@@ -13,8 +13,17 @@ public class ObjValue extends Value {
 
     public ObjValue(Environment env, String type) {
         mType = type;
-        for (final var field : env.getType(type))
+        for (final var field : env.getType(env.getOrigin(type)))
             mFields.put(field.name, new Pair<>(field.type, Value.makeValue(env, field.type, true)));
+    }
+
+    public Value getField(String field) {
+        return mFields.get(field).second;
+    }
+
+    public <V extends Value> V setField(String field, V value) {
+        mFields.get(field).second = value;
+        return value;
     }
 
     @Override
@@ -32,13 +41,9 @@ public class ObjValue extends Value {
         return true;
     }
 
-    public Value getField(String field) {
-        return mFields.get(field).second;
-    }
-
-    public <V extends Value> V setField(String field, V value) {
-        mFields.get(field).second = value;
-        return value;
+    @Override
+    public String toString() {
+        return String.format("%s %s", mType, mFields);
     }
 
 }

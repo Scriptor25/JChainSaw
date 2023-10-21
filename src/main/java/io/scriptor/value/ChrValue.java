@@ -23,4 +23,9 @@ public class ChrValue extends Value {
         return mValue > 0;
     }
 
+    @Override
+    public String toString() {
+        return Character.toString(mValue);
+    }
+
 }

@@ -29,19 +29,28 @@ public class Environment {
         registerFunction(false, "random", Value.TYPE_NUM, null, false, null, Natives::random);
         registerFunction(false, "inf", Value.TYPE_NUM, null, false, null, Natives::inf);
         registerFunction(false, "floor", Value.TYPE_NUM, new String[] { Value.TYPE_NUM }, false, null, Natives::floor);
+        registerFunction(false, "abs", Value.TYPE_NUM, new String[] { Value.TYPE_NUM }, false, null, Natives::abs);
         registerFunction(false, "sin", Value.TYPE_NUM, new String[] { Value.TYPE_NUM }, false, null, Natives::sin);
         registerFunction(false, "cos", Value.TYPE_NUM, new String[] { Value.TYPE_NUM }, false, null, Natives::cos);
         registerFunction(false, "tan", Value.TYPE_NUM, new String[] { Value.TYPE_NUM }, false, null, Natives::tan);
         registerFunction(false, "sqrt", Value.TYPE_NUM, new String[] { Value.TYPE_NUM }, false, null, Natives::sqrt);
+        registerFunction(false, "pow", Value.TYPE_NUM, new String[] { Value.TYPE_NUM, Value.TYPE_NUM }, false, null,
+                Natives::pow);
         registerFunction(false, "out", null, new String[] { Value.TYPE_STR }, true, null, Natives::out);
         registerFunction(false, "in", Value.TYPE_STR, new String[] { Value.TYPE_STR }, true, null, Natives::in);
         registerFunction(false, "num", Value.TYPE_NUM, new String[] { Value.TYPE_STR }, false, null, Natives::num);
-        registerFunction(false, "length", Value.TYPE_NUM, null, false, Value.TYPE_STR, Natives::length);
+        registerFunction(false, "length", Value.TYPE_NUM, null, false, Value.TYPE_STR, Natives::str_length);
         registerFunction(false, "at", Value.TYPE_CHR, new String[] { Value.TYPE_NUM }, false, Value.TYPE_STR,
-                Natives::at);
-        registerFunction(false, "add", null, new String[] { Value.TYPE_ANY }, false, Value.TYPE_LIST, Natives::add);
-        registerFunction(true, "file", "file", new String[] { Value.TYPE_STR, Value.TYPE_STR }, false, null,
-                Natives::file);
+                Natives::str_at);
+        registerFunction(false, "add", null, new String[] { Value.TYPE_ANY }, false, Value.TYPE_LIST,
+                Natives::list_add);
+        registerFunction(false, "get", Value.TYPE_ANY, new String[] { Value.TYPE_NUM }, false, Value.TYPE_LIST,
+                Natives::list_get);
+        registerFunction(false, "size", Value.TYPE_NUM, null, false, Value.TYPE_LIST, Natives::list_size);
+        registerFunction(true, "file", "file", new String[] { Value.TYPE_STR }, false, null, Natives::file);
+        registerFunction(false, "out", null, new String[] { Value.TYPE_STR }, true, "file", Natives::file_out);
+        registerFunction(false, "close", null, null, false, "file", Natives::file_close);
+
     }
 
     public Environment(Environment parent) {
@@ -313,7 +322,7 @@ public class Environment {
     }
 
     public boolean isAssignable(String type, String to) {
-        if (to.equals(Value.TYPE_ANY) || type.equals(to) || isAliasFor(type, to))
+        if (to.equals(Value.TYPE_ANY) || type.equals(to) || isAliasFor(type, to) || isAliasFor(to, type))
             return true;
         if (!mGroups.containsKey(to))
             if (isGlobal())

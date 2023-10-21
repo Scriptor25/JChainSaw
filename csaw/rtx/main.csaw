@@ -1,0 +1,82 @@
+inc "bool.csaw";
+inc "vec3.csaw";
+inc "color.csaw";
+inc "ray.csaw";
+
+@hit_sphere: num (center: point3, radius: num, r: ray) {
+    vec3 oc = r.origin() - center;
+    num a = dot(r.direction(), r.direction());
+    num b = 2.0 * dot(oc, r.direction());
+    num c = dot(oc, oc) - radius * radius;
+    num discriminant = b * b - 4 * a * c;
+    if (discriminant < 0) {
+        ret -1.0;
+    } else {
+        ret (-b - sqrt(discriminant)) / (2.0 * a);
+    }
+}
+
+@ray_color: color (r: ray) {
+    num t = hit_sphere(point3(0, 0, -1), 0.5, r);
+    if (t > 0.0) {
+        vec3 N = unit_vector(r.at(t) - point3(0, 0, -1));
+        ret 0.5 * color(N.x() + 1, N.y() + 1, N.z() + 1);
+    }
+    
+    vec3 unit_direction = unit_vector(r.direction());
+    num a = 0.5 * (unit_direction.y() + 1.0);
+    ret (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
+}
+
+@main: num {
+
+    ## Image
+
+    num aspect_ratio = 16.0 / 9.0;
+    num image_width = 400;
+
+    ## Calculate the image height, and ensure that it's at least 1.
+    num image_height = floor(image_width / aspect_ratio);
+    image_height = (image_height < 1) ? 1 : image_height;
+
+    ## Camera
+
+    num focal_length = 1.0;
+    num viewport_height = 2.0;
+    num viewport_width = viewport_height * (image_width / image_height);
+    point3 camera_center = point3(0, 0, 0);
+
+    ## Calculate the vectors across the horizontal and down the vertical viewport edges.
+    vec3 viewport_u = vec3(viewport_width, 0, 0);
+    vec3 viewport_v = vec3(0, -viewport_height, 0);
+
+    ## Calculate the horizontal and vertical delta vectors from pixel to pixel.
+    vec3 pixel_delta_u = viewport_u / image_width;
+    vec3 pixel_delta_v = viewport_v / image_height;
+
+    ## Calculate the location of the upper left pixel.
+    point3 viewport_upper_left = camera_center - vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
+    point3 pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+
+    ## Render
+
+    file output = file("out.ppm");
+    output.out("P3%n%.0f %.0f%n255%n", image_width, image_height);
+
+    for (num j = 0; j < image_height; j++) {
+        out("\rScanlines remaining: %.0f ", image_height - j);
+        for (num i = 0; i < image_width; i++) {
+            point3 pixel_center = pixel00_loc + (i * pixel_delta_u) + (j * pixel_delta_v);
+            vec3 ray_direction = pixel_center - camera_center;
+            ray r = ray(camera_center, ray_direction);
+
+            color pixel_color = ray_color(r);
+            write_color(output, pixel_color);
+        }
+    }
+
+    out("\rDone.                 %n");
+    output.close();
+
+    ret 0;
+}

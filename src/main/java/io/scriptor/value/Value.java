@@ -39,8 +39,10 @@ public abstract class Value {
 
     public abstract boolean asBoolean();
 
+    public abstract String toString();
+
     public static Value makeValue(Environment env, String type, boolean primitives) {
-        switch (type) {
+        switch (env.getOrigin(type)) {
             case TYPE_NUM:
                 return new NumValue(0);
             case TYPE_STR:

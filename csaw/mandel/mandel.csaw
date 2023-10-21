@@ -1,28 +1,47 @@
 inc "complex.csaw";
 
-num MAX_ITER = 255;
-num WIDTH = 100;
-num HEIGHT = 40;
+str SYMBOLS_HIGH = "@$B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}()?-_+~<>i!lI;:,\"^`'. ";
+str SYMBOLS_LOW = "@%#*+=-:. ";
+str SYMBOLS = SYMBOLS_HIGH;
 
-str SYMBOLS = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}()?-_+~<>i!lI;:,\"^`'. ";
-str SYMBOLS_LOW = " .:-=+*#%@";
+num MAX_ITER = 100;
+num SAMPLES = 100;
+num WIDTH = 1024;
+num HEIGHT = WIDTH;
 
 @main: num {
 
+#
     num xc = num(in("xc: "));
     num yc = num(in("yc: "));
     num size = num(in("size: "));
+#
+
+    num xc = -0.5;
+    num yc = 0;
+    num size = 2;
+
+    file f = file("C:\\Users\\Felix Schreiber\\Documents\\GitHub\\csaw\\out.ppm");
+    f.out("P3%n%.0f %.0f%n255%n", WIDTH, HEIGHT);
 
     for (num j = 0; j < HEIGHT; j++) {
         for (num i = 0; i < WIDTH; i++) {
-            num x0 = xc - size / 2 + size * i / WIDTH;
-            num y0 = yc - size / 2 + size * j / HEIGHT;
-            complex z0 = complex(x0, y0);
-            num n = mandel(z0, MAX_ITER) / MAX_ITER;
-            out("%c", symbol(n));
+            num n = 0;
+            for (num s = 0; s < SAMPLES; s++) {
+                num x0 = xc - size / 2 + size * (i + random() - 0.5) / WIDTH;
+                num y0 = yc - size / 2 + size * (j + random() - 0.5) / HEIGHT;
+                complex z0 = complex(x0, y0);
+                n += mandel(z0, MAX_ITER);
+            }
+            n = n / (SAMPLES * MAX_ITER);
+            ## out("%c", symbol(n));
+            num grey = floor(n * 255.999);
+            f.out("%.0f %.0f %.0f%n", grey, grey, grey);
         }
-        out("%n");
+        ## out("%n");
     }
+    
+    f.close();
 
     ret 0;
 }
@@ -32,8 +51,8 @@ str SYMBOLS_LOW = " .:-=+*#%@";
 
 @symbol: chr (n: num) {
     num length = SYMBOLS.length();
-    n = max(min(n * (length - 1), length - 1), 0);
-    ret SYMBOLS.at(n);
+    n = max(min(n * length, length), 0);
+    ret SYMBOLS.at(length - n);
 }
 
 @mandel: num (z0: complex, max: num) {

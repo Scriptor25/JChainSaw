@@ -48,10 +48,13 @@ public class FunDef {
             }
 
             if (value == null && definition.type != null)
-                throw new IllegalStateException();
+                throw new IllegalStateException(String.format(
+                        "invalid return value: value is null, but function has to provide type '%s'", definition.type));
 
-            if (value != null && !definition.type.equals(value.getType()))
-                throw new IllegalStateException();
+            if (value != null && !e.isAssignable(value.getType(), definition.type))
+                throw new IllegalStateException(String.format(
+                        "invalid return value: value type is '%s', but function has to provide type '%s'",
+                        value.getType(), definition.type));
 
             return value;
         }

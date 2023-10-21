@@ -18,10 +18,12 @@ import io.scriptor.expr.MemExpr;
 import io.scriptor.expr.NumExpr;
 import io.scriptor.expr.StrExpr;
 import io.scriptor.expr.UnExpr;
+import io.scriptor.stmt.AliasStmt;
 import io.scriptor.stmt.ForStmt;
 import io.scriptor.stmt.FunStmt;
 import io.scriptor.stmt.IfStmt;
 import io.scriptor.stmt.IncStmt;
+import io.scriptor.stmt.ParStmt;
 import io.scriptor.stmt.RetStmt;
 import io.scriptor.stmt.Stmt;
 import io.scriptor.stmt.SwitchStmt;
@@ -68,26 +70,38 @@ public class Parser {
     private final BufferedReader mReader;
     private final Environment mEnvironment;
     private Token mToken;
+    private int mLine = 1;
 
     public Parser(InputStream stream, Environment env) throws IOException {
         mReader = new BufferedReader(new InputStreamReader(stream));
         mEnvironment = env;
+    }
 
-        next(); // prepare first token
-        while (mToken.type != TokenType.EOF) {
-            final var stmt = nextStmt(true);
-            System.out.println(stmt);
-            /* final var value = */
-            Interpreter.evaluate(env, stmt);
-            // System.out.println(value);
+    public boolean start() {
+        try {
+            next(); // prepare first token
+            while (mToken.type != TokenType.EOF) {
+                final var stmt = nextStmt(true);
+                // System.out.println(stmt);
+                /* final var value = */
+                Interpreter.evaluate(mEnvironment, stmt);
+                // System.out.println(value);
+            }
+            return true;
+        } catch (Exception e) {
+            System.err.printf("At line %d: %s%n", mLine, e.getMessage());
+            return false;
         }
     }
 
     private Token next() throws IOException {
         int c = mReader.read();
 
-        while (isIgnorable(c))
+        while (isIgnorable(c)) {
+            if (c == '\n')
+                mLine++;
             c = mReader.read();
+        }
 
         if (c < 0)
             return mToken = Token.EOF();
@@ -96,7 +110,8 @@ public class Parser {
             c = mReader.read();
             final char LIMIT = c == '#' ? '\n' : '#';
             while ((c = mReader.read()) != LIMIT && c >= 0)
-                ;
+                if (c == '\n')
+                    mLine++;
             return next();
         }
 
@@ -256,6 +271,9 @@ public class Parser {
 
     private Stmt nextStmt(boolean semicolon) throws IOException {
 
+        if (at("alias"))
+            return nextAliasStmt(semicolon);
+
         if (at("for"))
             return nextForStmt(semicolon);
 
@@ -267,6 +285,9 @@ public class Parser {
 
         if (at("inc"))
             return nextIncStmt(semicolon);
+
+        if (at("par"))
+            return nextParStmt(semicolon);
 
         if (at("ret"))
             return nextRetStmt(semicolon);
@@ -303,6 +324,21 @@ public class Parser {
         expectAndNext("}"); // skip }
 
         return enclosed.toArray(new Stmt[0]);
+    }
+
+    private AliasStmt nextAliasStmt(boolean semicolon) throws IOException {
+        final var stmt = new AliasStmt();
+
+        expectAndNext("alias"); // skip "alias"
+        stmt.alias = mToken.value;
+        expectAndNext(TokenType.IDENTIFIER); // skip alias
+        expectAndNext(":"); // skip :
+        stmt.origin = mToken.value;
+        expectAndNext(TokenType.IDENTIFIER); // skip origin
+        if (semicolon)
+            expectAndNext(";"); // skip ;
+
+        return stmt;
     }
 
     private ForStmt nextForStmt(boolean semicolon) throws IOException {
@@ -429,6 +465,27 @@ public class Parser {
         stmt.path = mToken.value;
         expectAndNext(TokenType.STRING); // skip path
         expectAndNext(";"); // skip ;
+
+        return stmt;
+    }
+
+    private ParStmt nextParStmt(boolean semicolon) throws IOException {
+        final var stmt = new ParStmt();
+
+        expectAndNext("par"); // skip "par"
+        expectAndNext("("); // skip (
+        stmt.from = nextExpr();
+        expectAndNext(";"); // skip ;
+        stmt.length = nextExpr();
+        expectAndNext(";"); // skip ;
+        stmt.variable = mToken.value;
+        expectAndNext(TokenType.IDENTIFIER);
+        expectAndNext(")"); // skip )
+
+        if (at("{"))
+            stmt.body = nextEnclosedStmt();
+        else
+            stmt.body = new Stmt[] { nextStmt(semicolon) };
 
         return stmt;
     }
@@ -635,9 +692,7 @@ public class Parser {
             if (at("=")) {
                 binExpr.operator += mToken.value;
                 next(); // skip operator
-            }
-
-            if (binExpr.operator.equals("=")) {
+            } else if (binExpr.operator.equals("=")) {
                 expr = new AssignExpr(expr, nextExpr());
                 continue;
             }

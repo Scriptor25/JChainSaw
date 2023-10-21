@@ -1,25 +1,17 @@
 thing: ray {
-    orig: vec3,
+    orig: point3,
     dir: vec3
 }
 
-$ray { my.orig = my.dir = vec3(); }
-$ray (origin: vec3, direction: vec3) {
+$ray() {}
+$ray (origin: point3, direction: vec3) {
     my.orig = origin;
     my.dir = direction;
 }
 
-@origin: vec3 -> ray { ret my.orig; }
+@origin: point3 -> ray { ret my.orig; }
 @direction: vec3 -> ray { ret my.dir; }
 
-@at: vec3 (t: num) -> ray { ret my.orig + t * my.dir; }
-
-@set (r: ray) -> ray {
-    my.orig = r.orig;
-    my.dir = r.dir;
-}
-
-@set (origin: vec3, direction: vec3) -> ray {
-    my.orig = origin;
-    my.dir = direction;
+@at: point3 (t: num) -> ray {
+    ret my.orig + t * my.dir;
 }
