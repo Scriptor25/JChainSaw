@@ -11,6 +11,8 @@ import io.scriptor.csaw.impl.value.Value;
 
 public class Environment {
 
+    private static Environment GLOBAL;
+
     private final Environment mParent;
 
     private final Map<String, Pair<String, Value>> mVariables = new HashMap<>();
@@ -22,7 +24,12 @@ public class Environment {
 
     private String mPath;
 
+    public static Environment getGlobal() {
+        return GLOBAL;
+    }
+
     public Environment(String path) {
+        GLOBAL = this;
         mParent = null;
         mPath = path;
     }
@@ -63,7 +70,7 @@ public class Environment {
     public <V extends Value> V setVariable(String id, V value) {
         if (!mVariables.containsKey(id))
             if (isGlobal())
-                throw new RuntimeException();
+                throw new IllegalStateException(String.format("undefined variable '%s'", id));
             else
                 return mParent.setVariable(id, value);
 
@@ -84,7 +91,7 @@ public class Environment {
         return mVariables.get(id).second;
     }
 
-    public boolean hasFunction(String member, String name, String[] types) {
+    public boolean hasFunction(String member, String name, String... types) {
         if (!mFunctions.containsKey(member) || !mFunctions.get(member).containsKey(name))
             return false;
 
@@ -313,7 +320,9 @@ public class Environment {
     }
 
     public boolean isAssignable(String type, String to) {
-        if (to.equals(Value.TYPE_ANY) || type.equals(to) || isAliasFor(type, to) || isAliasFor(to, type))
+        if (type == null)
+            return true;
+        if (Value.TYPE_ANY.equals(to) || type.equals(to) || isAliasFor(type, to) || isAliasFor(to, type))
             return true;
         if (!mGroups.containsKey(to))
             if (isGlobal())

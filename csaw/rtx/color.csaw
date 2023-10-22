@@ -2,11 +2,29 @@ alias color : vec3;
 $color { my = vec3(); }
 $color (r: num, g: num, b: num) { my = vec3(r, g, b); }
 
-@write_color (output: file, pixel_color: color) {
+interval intensity = interval(0.000, 0.999);
+
+@write_color (output: file, pixel_color: color, samples_per_pixel: num) {
+    num r = pixel_color.x();
+    num g = pixel_color.y();
+    num b = pixel_color.z();
+
+    ## Divide the color by the number of samples.
+    num scale = 1.0 / samples_per_pixel;
+    r *= scale;
+    g *= scale;
+    b *= scale;
+
+    ## Apply the linear to gamma transform.
+    r = linear_to_gamma(r);
+    g = linear_to_gamma(g);
+    b = linear_to_gamma(b);
+
+    ## Write the translated [0,255] value of each color component.
     output.out(
         "%.0f %.0f %.0f%n", 
-        floor(255.999 * pixel_color.x()),
-        floor(255.999 * pixel_color.y()),
-        floor(255.999 * pixel_color.z())
+        floor(256 * intensity.clamp(r)),
+        floor(256 * intensity.clamp(g)),
+        floor(256 * intensity.clamp(b))
     );
 }

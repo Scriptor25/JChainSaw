@@ -24,6 +24,7 @@ import io.scriptor.csaw.impl.stmt.IncStmt;
 import io.scriptor.csaw.impl.stmt.ParStmt;
 import io.scriptor.csaw.impl.stmt.RetStmt;
 import io.scriptor.csaw.impl.stmt.Stmt;
+import io.scriptor.csaw.impl.stmt.SwitchStmt;
 import io.scriptor.csaw.impl.stmt.ThingStmt;
 import io.scriptor.csaw.impl.stmt.VarStmt;
 import io.scriptor.csaw.impl.stmt.WhileStmt;
@@ -56,6 +57,8 @@ public class Interpreter {
             return evaluate(env, (ParStmt) stmt);
         if (stmt instanceof RetStmt)
             return evaluate(env, (RetStmt) stmt);
+        if (stmt instanceof SwitchStmt)
+            return evaluate(env, (SwitchStmt) stmt);
         if (stmt instanceof ThingStmt)
             return evaluate(env, (ThingStmt) stmt);
         if (stmt instanceof VarStmt)
@@ -165,6 +168,28 @@ public class Interpreter {
 
     public static Value evaluate(Environment env, RetStmt stmt) throws Exception {
         return stmt.value == null ? null : evaluate(env, stmt.value).isReturn(true);
+    }
+
+    public static Value evaluate(Environment env, SwitchStmt stmt) throws Exception {
+        final var switcher = evaluate(env, stmt.switcher);
+
+        if (!stmt.cases.containsKey(switcher)) {
+            final var environment = new Environment(env);
+            for (final var s : stmt.defaultCase) {
+                final var value = evaluate(environment, s);
+                if (value != null && value.isReturn())
+                    return value;
+            }
+            return null;
+        }
+
+        final var environment = new Environment(env);
+        for (final var s : stmt.cases.get(switcher)) {
+            final var value = evaluate(environment, s);
+            if (value != null && value.isReturn())
+                return value;
+        }
+        return null;
     }
 
     public static Value evaluate(Environment env, ThingStmt stmt) {

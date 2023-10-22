@@ -1,0 +1,23 @@
+thing: hit_record {
+    p: point3,
+    normal: vec3,
+    mat: material,
+    t: num,
+    front_face: bool
+}
+
+@set (rec: hit_record) -> hit_record {
+    my.p = rec.p;
+    my.normal = rec.normal;
+    my.mat = rec.mat;
+    my.t = rec.t;
+    my.front_face = rec.front_face;
+}
+
+@set_face_normal (r: ray, outward_normal: vec3) -> hit_record {
+    ## Sets the hit record normal vector.
+    ## NOTE: the parameter `outward_normal` is assumed to have unit length.
+
+    my.front_face = dot(r.direction(), outward_normal) < 0;
+    my.normal = my.front_face ? outward_normal : -outward_normal;
+}

@@ -130,7 +130,7 @@ public class Collector {
         if (cls.equals(StrValue.class))
             return Value.TYPE_STR;
 
-        if (cls.equals(Value.class))
+        if (cls.equals(Value.class) || cls.equals(NativeValue.class))
             return Value.TYPE_ANY;
 
         if (!env.hasAlias(cls.getName()))

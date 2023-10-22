@@ -132,7 +132,13 @@ public class Parser {
             do {
                 builder.append((char) c);
                 mReader.mark(1);
+                int p = c;
                 c = mReader.read();
+                if ((p == 'e' || p == 'E') && c == '-') {
+                    builder.append((char) c);
+                    mReader.mark(1);
+                    c = mReader.read();
+                }
             } while (isDigit(c) || c == '.' || c == 'e' || c == 'E');
             mReader.reset();
 

@@ -40,7 +40,7 @@ public abstract class Value {
 
     public abstract String toString();
 
-    public static Value makeValue(Environment env, String type, boolean primitives) {
+    public static Value makeValue(Environment env, String type, boolean primitives) throws Exception {
         switch (env.getOrigin(type)) {
             case TYPE_NUM:
                 return new NumValue(0);
@@ -54,6 +54,9 @@ public abstract class Value {
 
         if (primitives || !env.existsType(env.getOrigin(type)))
             return new NullValue(type);
+
+        if (env.hasFunction(null, type))
+            return env.getAndInvoke(null, type);
 
         return new ObjValue(env, type);
     }
