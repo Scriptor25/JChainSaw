@@ -5,8 +5,8 @@ str SYMBOLS_LOW = "@%#*+=-:. ";
 str SYMBOLS = SYMBOLS_HIGH;
 
 num MAX_ITER = 100;
-num SAMPLES = 100;
-num WIDTH = 1024;
+num SAMPLES = 10;
+num WIDTH = 128;
 num HEIGHT = WIDTH;
 
 @main: num {

@@ -40,7 +40,7 @@ $vec3 (x: num, y: num, z: num) {
 }
 
 @(/): vec3 (t: num) -> vec3 {
-    ret my.mul(1 / t);
+    ret my *= (1 / t);
 }
 
 @length: num -> vec3 {
@@ -48,7 +48,7 @@ $vec3 (x: num, y: num, z: num) {
 }
 
 @length_squared: num -> vec3 {
-    ret (my.x * my.x) + (my.y * my.y) + (my.z * my.z);
+    ret my.x * my.x + my.y * my.y + my.z * my.z;
 }
 
 alias point3 : vec3; ## point3 is just an alias for vec3, but useful for geometric clarity in the code.
@@ -86,14 +86,14 @@ $point3 (x: num, y: num, z: num) { my = vec3(x, y, z); }
 }
 
 @dot: num (u: vec3, v: vec3) {
-    ret (u.x * v.x) + (u.y * v.y) + (u.z * v.z);
+    ret u.x * v.x + u.y * v.y + u.z * v.z;
 }
 
 @cross: vec3 (u: vec3, v: vec3) {
     ret vec3(
-        (u.y * v.z) - (u.z * v.y),
-        (u.z * v.x) - (u.x * v.z),
-        (u.x * v.y) - (u.y * v.x)
+        u.y * v.z - u.z * v.y,
+        u.z * v.x - u.x * v.z,
+        u.x * v.y - u.y * v.x
     );
 }
 
