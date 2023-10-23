@@ -13,8 +13,8 @@ public class ObjValue extends Value {
 
     public ObjValue(Environment env, String type) throws Exception {
         mType = type;
-        for (final var field : env.getType(env.getOrigin(type)))
-            mFields.put(field.name, new Pair<>(field.type, Value.makeValue(env, field.type, true)));
+        for (final var field : Environment.getType(type))
+            mFields.put(field.name, new Pair<>(field.type, Value.makeValue(env, field.type, true, false)));
     }
 
     public Value getField(String field) {
@@ -28,7 +28,7 @@ public class ObjValue extends Value {
 
     @Override
     public Object getValue() {
-        return null;
+        return mFields;
     }
 
     @Override

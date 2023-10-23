@@ -10,7 +10,11 @@ public class ChrExpr extends Expr {
 
     @Override
     public String toString() {
-        return Character.toString(value);
+        return String.format("'%c'", value);
     }
 
+    @Override
+    public boolean isConstant() {
+        return true;
+    }
 }

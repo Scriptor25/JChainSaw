@@ -15,4 +15,8 @@ public class UnExpr extends Expr {
         return String.format("%s%s", operator, value);
     }
 
+    @Override
+    public boolean isConstant() {
+        return value.isConstant();
+    }
 }

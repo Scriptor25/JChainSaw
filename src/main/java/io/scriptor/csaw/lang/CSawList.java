@@ -1,14 +1,15 @@
 package io.scriptor.csaw.lang;
 
-import io.scriptor.csaw.impl.Environment;
+import static io.scriptor.csaw.impl.Environment.getFunction;
+
+import java.util.List;
+import java.util.Vector;
+
 import io.scriptor.csaw.impl.value.NativeValue;
 import io.scriptor.csaw.impl.value.NumValue;
 import io.scriptor.csaw.impl.value.StrValue;
 import io.scriptor.csaw.impl.value.Value;
 import io.scriptor.java.CSawNative;
-
-import java.util.List;
-import java.util.Vector;
 
 @CSawNative("list")
 public class CSawList {
@@ -41,11 +42,10 @@ public class CSawList {
 
     public NativeValue sort(StrValue comparator) {
         final var list = new CSawList(mValues);
-        final var env = Environment.getGlobal();
-        final var cmp = env.getFunction(null, comparator.getValue(), new String[2]);
+        final var cmp = getFunction(null, comparator.getValue(), new String[] { Value.TYPE_ANY, Value.TYPE_ANY });
         list.mValues.sort((v1, v2) -> {
             try {
-                final var val = ((NumValue) cmp.body.invoke(null, env, v1, v2)).getValue();
+                final var val = ((NumValue) cmp.invoke(null, v1, v2)).getValue();
                 return (int) (double) val;
             } catch (Exception e) {
                 e.printStackTrace();

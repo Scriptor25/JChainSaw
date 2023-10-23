@@ -1,5 +1,8 @@
 package io.scriptor.csaw.impl;
 
+import static io.scriptor.csaw.impl.Environment.getGlobal;
+import static io.scriptor.csaw.impl.Environment.isAssignable;
+
 import io.scriptor.csaw.impl.stmt.Stmt;
 import io.scriptor.csaw.impl.value.Value;
 
@@ -22,19 +25,19 @@ public class FunDef {
         }
 
         @Override
-        public Value invoke(Value member, Environment env, Value... args) throws Exception {
-            final var e = new Environment(env);
+        public Value invoke(Value member, Value... args) throws Exception {
+            final var env = new Environment(getGlobal());
             for (int i = 0; i < args.length; i++)
-                e.createVariable(parameters[i], definition.parameters[i], args[i]);
+                env.createVariable(parameters[i], definition.parameters[i], args[i]);
 
             if (definition.constructor)
-                e.createVariable("my", definition.type, Value.makeValue(e, definition.type, false));
+                env.createVariable("my", definition.type, Value.makeValue(env, definition.type, false, true));
             if (definition.member != null)
-                e.createVariable("my", definition.member, member);
+                env.createVariable("my", definition.member, member);
 
             Value value = null;
             for (final var stmt : implementation) {
-                final var v = Interpreter.evaluate(e, stmt);
+                final var v = Interpreter.evaluate(env, stmt);
                 if (v != null && v.isReturn()) {
                     value = v.isReturn(false);
                     break;
@@ -44,14 +47,14 @@ public class FunDef {
             if (definition.constructor) {
                 if (value != null)
                     throw new IllegalStateException();
-                return e.getVariable("my");
+                return env.getVariable("my");
             }
 
             if (value == null && definition.type != null)
                 throw new IllegalStateException(String.format(
                         "invalid return value: value is null, but function has to provide type '%s'", definition.type));
 
-            if (value != null && !e.isAssignable(value.getType(), definition.type))
+            if (value != null && !isAssignable(value.getType(), definition.type))
                 throw new IllegalStateException(String.format(
                         "invalid return value: value type is '%s', but function has to provide type '%s'",
                         value.getType(), definition.type));
@@ -121,5 +124,9 @@ public class FunDef {
 
         if (body instanceof FunBody)
             ((FunBody) body).definition = this;
+    }
+
+    public Value invoke(Value member, Value... args) throws Exception {
+        return body.invoke(member, args);
     }
 }

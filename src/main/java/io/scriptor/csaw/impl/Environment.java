@@ -13,23 +13,24 @@ public class Environment {
 
     private static Environment GLOBAL;
 
-    private final Environment mParent;
+    private static final Map<String, Map<String, List<FunDef>>> FUNCTIONS = new HashMap<>();
+    private static final Map<String, String> ALIAS = new HashMap<>();
+    private static final Map<String, Parameter[]> TYPES = new HashMap<>();
+    private static final Map<String, List<String>> GROUPS = new HashMap<>();
 
-    private final Map<String, Pair<String, Value>> mVariables = new HashMap<>();
-    private final Map<String, Map<String, List<FunDef>>> mFunctions = new HashMap<>();
-
-    private final Map<String, Parameter[]> mTypes = new HashMap<>();
-    private final Map<String, String> mAlias = new HashMap<>();
-    private final Map<String, List<String>> mGroups = new HashMap<>();
-
-    private String mPath;
+    public static Environment initGlobal(String path) {
+        return GLOBAL = new Environment(path);
+    }
 
     public static Environment getGlobal() {
         return GLOBAL;
     }
 
-    public Environment(String path) {
-        GLOBAL = this;
+    private final Environment mParent;
+    private final Map<String, Pair<String, Value>> mVariables = new HashMap<>();
+    private String mPath;
+
+    private Environment(String path) {
         mParent = null;
         mPath = path;
     }
@@ -52,114 +53,76 @@ public class Environment {
         return mPath;
     }
 
+    public boolean hasVariable(String id) {
+        return mVariables.containsKey(id);
+    }
+
     public boolean existsVariable(String id) {
-        if (mVariables.containsKey(id))
+        if (hasVariable(id))
             return true;
         if (isGlobal())
             return false;
         return mParent.existsVariable(id);
     }
 
-    public <V extends Value> V createVariable(String name, String type, V value) {
-        if (mVariables.containsKey(name))
-            throw new IllegalStateException(String.format("variable '%s' already existing", name));
-        mVariables.put(name, new Pair<>(type, value));
+    public <V extends Value> V createVariable(String id, String type, V value) {
+        if (hasVariable(id))
+            throw new IllegalStateException(String.format("variable '%s' already defined", id));
+        mVariables.put(id, new Pair<>(type, value));
         return value;
     }
 
-    public <V extends Value> V setVariable(String id, V value) {
-        if (!mVariables.containsKey(id))
+    private Pair<String, Value> getVarEntry(String id) {
+        if (!hasVariable(id))
             if (isGlobal())
                 throw new IllegalStateException(String.format("undefined variable '%s'", id));
             else
-                return mParent.setVariable(id, value);
-
-        if (!isAssignable(value.getType(), mVariables.get(id).first))
-            throw new RuntimeException();
-
-        mVariables.get(id).second = value;
-        return value;
+                return mParent.getVarEntry(id);
+        return mVariables.get(id);
     }
 
     public Value getVariable(String id) {
-        if (!mVariables.containsKey(id))
-            if (isGlobal())
-                throw new IllegalStateException(String.format("undefined variable '%s'", id));
-            else
-                return mParent.getVariable(id);
-
-        return mVariables.get(id).second;
+        if (!existsVariable(id))
+            throw new IllegalStateException(String.format("undefined variable '%s'", id));
+        return getVarEntry(id).second;
     }
 
-    public boolean hasFunction(String member, String name, String... types) {
-        if (!mFunctions.containsKey(member) || !mFunctions.get(member).containsKey(name))
-            return false;
+    public <V extends Value> V setVariable(String id, V value) {
+        if (!existsVariable(id))
+            throw new IllegalStateException(String.format("undefined variable '%s'", id));
 
-        final var functions = mFunctions.get(member).get(name);
-        for (final var fun : functions) {
-            if (fun.parameters.length != types.length) // wrong params number
-                continue;
+        final var variable = getVarEntry(id);
+        if (!isAssignable(value.getType(), variable.first))
+            throw new RuntimeException(String.format(
+                    "variable '%s' (%s) cannot be assigned to value of type '%s'",
+                    id,
+                    variable.first,
+                    value.getType()));
 
-            int i = 0;
-            for (; i < fun.parameters.length; i++)
-                if (!isAssignable(types[i], fun.parameters[i]))
-                    break;
-            if (i == fun.parameters.length)
-                return true;
+        variable.second = value;
+        return value;
+    }
+
+    public static boolean hasFunction(String member, String name, String... types) {
+        if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
+            final var functions = FUNCTIONS.get(member).get(name);
+            for (final var fun : functions) {
+                if (fun.parameters.length != types.length) // wrong params number
+                    continue;
+
+                int i = 0;
+                for (; i < fun.parameters.length; i++)
+                    if (!isAssignable(types[i], fun.parameters[i]))
+                        break;
+                if (i == fun.parameters.length)
+                    return true;
+            }
         }
 
         return false;
     }
 
-    public FunDef getFunction(String member, String name, String... params) {
-        if (!mFunctions.containsKey(member) || !mFunctions.get(member).containsKey(name))
-            if (isGlobal())
-                throw new IllegalStateException(
-                        String.format("undefined function '%s', member of '%s', types %s",
-                                name,
-                                member,
-                                Arrays.toString(params)));
-            else
-                return mParent.getFunction(member, name, params);
-
-        final var functions = mFunctions.get(member).get(name);
-        for (final var fun : functions) {
-            if (!fun.vararg && fun.parameters.length != params.length) // wrong params number and not vararg
-                continue;
-            if (fun.vararg && fun.parameters.length > params.length) // vararg but not enough params
-                continue;
-
-            int i = 0;
-            for (; i < fun.parameters.length; i++)
-                if (!isAssignable(params[i], fun.parameters[i]))
-                    break;
-            if (i == fun.parameters.length || (fun.vararg && i < params.length)) // either right number of
-                                                                                 // params or the function has
-                                                                                 // to be vararg and then the
-                                                                                 // number must be less than the
-                                                                                 // params length
-                return fun;
-        }
-
-        if (isGlobal())
-            throw new IllegalStateException(
-                    String.format("undefined function '%s', member of '%s', types %s",
-                            name,
-                            member,
-                            Arrays.toString(params)));
-
-        return mParent.getFunction(member, name, params);
-    }
-
-    public Value getAndInvoke(Value member, String name, Value... args) throws Exception {
-        final var argTypes = new String[args == null ? 0 : args.length];
-        for (int i = 0; i < argTypes.length; i++)
-            argTypes[i] = args[i].getType();
-
-        return getFunction(member != null ? member.getType() : null, name, argTypes).body.invoke(member, this, args);
-    }
-
-    public FunDef createFunction(
+    public static FunDef createFunction(
             boolean constructor,
             String name,
             String type,
@@ -193,7 +156,7 @@ public class Environment {
                 .body(new FunDef.FunBody(parameters, body))
                 .build();
 
-        mFunctions
+        FUNCTIONS
                 .computeIfAbsent(member, key -> new HashMap<>())
                 .computeIfAbsent(name, key -> new Vector<>())
                 .add(fun);
@@ -201,7 +164,7 @@ public class Environment {
         return fun;
     }
 
-    public void registerFunction(
+    public static void registerFunction(
             boolean constructor,
             String name,
             String type,
@@ -232,103 +195,105 @@ public class Environment {
                 .body(body)
                 .build();
 
-        mFunctions
+        FUNCTIONS
                 .computeIfAbsent(member, key -> new HashMap<>())
                 .computeIfAbsent(name, key -> new Vector<>())
                 .add(fun);
     }
 
-    public void createAlias(String alias, String type) {
-        mAlias.put(alias, type);
+    public static FunDef getFunction(String member, String name, String... types) {
+        if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
+            final var functions = FUNCTIONS.get(member).get(name);
+            for (final var fun : functions) {
+                if (!fun.vararg && fun.parameters.length != types.length) // wrong params number and not vararg
+                    continue;
+                if (fun.vararg && fun.parameters.length > types.length) // vararg but not enough params
+                    continue;
+
+                int i = 0;
+                for (; i < fun.parameters.length; i++)
+                    if (!isAssignable(types[i], fun.parameters[i]))
+                        break;
+                if (i == fun.parameters.length || (fun.vararg && i < types.length)) // either right number of
+                                                                                    // params or the function has
+                                                                                    // to be vararg and then the
+                                                                                    // number must be less than the
+                                                                                    // params length
+                    return fun;
+            }
+        }
+
+        throw new IllegalStateException(
+                String.format("undefined function '%s', member of '%s', types %s",
+                        name,
+                        member,
+                        Arrays.toString(types)));
     }
 
-    private void putType(String name, Parameter[] fields) {
-        if (!mTypes.containsKey(name))
-            if (isGlobal())
-                return;
-            else
-                mParent.putType(name, fields);
-        mTypes.put(name, fields);
+    public static Value getAndInvoke(Value member, String name, Value... args) throws Exception {
+        final var types = new String[args == null ? 0 : args.length];
+        for (int i = 0; i < types.length; i++)
+            types[i] = args[i].getType();
+
+        return getFunction(member != null ? member.getType() : null, name, types).invoke(member, args);
     }
 
-    public void createType(String group, String name, Parameter[] fields) {
-        if (existsType(name)) {
-            if (getType(name) != null)
+    public static boolean hasAlias(String type) {
+        return ALIAS.containsKey(type);
+    }
+
+    public static void createAlias(String alias, String type) {
+        if (hasAlias(type))
+            throw new IllegalStateException(String.format("alias already defined for type '%s'", type));
+        ALIAS.put(alias, type);
+    }
+
+    public static String getAlias(String type) {
+        if (!hasAlias(type))
+            throw new IllegalStateException(String.format("undefined alias for type '%s'", type));
+        return ALIAS.get(type);
+    }
+
+    public static String getOrigin(String type) {
+        if (!hasAlias(type))
+            return type;
+        return getOrigin(getAlias(type));
+    }
+
+    public static boolean hasType(String type) {
+        return TYPES.containsKey(type);
+    }
+
+    public static void createType(String group, String name, Parameter[] fields) {
+        if (hasType(name)) {
+            if (getType(name) != null) // type is not opaque
                 throw new IllegalStateException(String.format("cannot redefine non-opaque type '%s'", name));
-            putType(name, fields);
+            TYPES.put(name, fields);
             return;
         }
 
-        mTypes.put(name, fields);
-        mGroups.computeIfAbsent(group, key -> new Vector<>()).add(name);
+        TYPES.put(name, fields);
+        GROUPS.computeIfAbsent(group, key -> new Vector<>()).add(name);
     }
 
-    public String getAlias(String alias) {
-        if (!mAlias.containsKey(alias))
-            if (isGlobal())
-                throw new IllegalStateException(String.format("undefined alias '%s'", alias));
+    public static Parameter[] getType(String type) {
+        if (!hasType(type))
+            if (!hasAlias(type))
+                throw new IllegalStateException(String.format("undefined type '%s'", type));
             else
-                return mParent.getAlias(alias);
-        return mAlias.get(alias);
+                return getType(getAlias(type));
+        return TYPES.get(type);
     }
 
-    public boolean hasAlias(String alias) {
-        if (!mAlias.containsKey(alias))
-            if (isGlobal())
-                return false;
-            else
-                return mParent.hasAlias(alias);
-        return true;
+    public static boolean isAliasFor(String type, String aliasFor) {
+        return getOrigin(type).equals(getOrigin(aliasFor));
     }
 
-    public String getOrigin(String alias) {
-        if (!mAlias.containsKey(alias))
-            if (isGlobal())
-                return alias;
-            else
-                return mParent.getOrigin(alias);
-        return getOrigin(mAlias.get(alias));
-    }
-
-    public boolean existsType(String name) {
-        if (!mTypes.containsKey(name))
-            if (isGlobal())
-                return false;
-            else
-                return mParent.existsType(name);
-        return true;
-    }
-
-    public Parameter[] getType(String name) {
-        if (!mTypes.containsKey(name))
-            if (isGlobal())
-                throw new IllegalStateException(String.format("undefined type '%s'", name));
-            else
-                return mParent.getType(name);
-        return mTypes.get(name);
-    }
-
-    public boolean isAliasFor(String type, String alias) {
-        if (type.equals(alias))
+    public static boolean isAssignable(String type, String to) {
+        if (Value.TYPE_ANY.equals(to) || Value.TYPE_ANY.equals(type) || isAliasFor(type, to))
             return true;
-        if (!mAlias.containsKey(type))
-            if (isGlobal())
-                return false;
-            else
-                return mParent.isAliasFor(type, alias);
-        return isAliasFor(mAlias.get(type), alias);
-    }
-
-    public boolean isAssignable(String type, String to) {
-        if (type == null)
-            return true;
-        if (Value.TYPE_ANY.equals(to) || type.equals(to) || isAliasFor(type, to) || isAliasFor(to, type))
-            return true;
-        if (!mGroups.containsKey(to))
-            if (isGlobal())
-                return false;
-            else
-                return mParent.isAssignable(type, to);
-        return mGroups.get(to).contains(type);
+        if (GROUPS.containsKey(to))
+            return GROUPS.get(to).contains(type);
+        return false;
     }
 }

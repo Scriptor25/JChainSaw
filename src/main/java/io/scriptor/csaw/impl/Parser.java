@@ -26,7 +26,6 @@ import io.scriptor.csaw.impl.stmt.IncStmt;
 import io.scriptor.csaw.impl.stmt.ParStmt;
 import io.scriptor.csaw.impl.stmt.RetStmt;
 import io.scriptor.csaw.impl.stmt.Stmt;
-import io.scriptor.csaw.impl.stmt.SwitchStmt;
 import io.scriptor.csaw.impl.stmt.ThingStmt;
 import io.scriptor.csaw.impl.stmt.VarStmt;
 import io.scriptor.csaw.impl.stmt.WhileStmt;
@@ -298,9 +297,6 @@ public class Parser {
         if (at("ret"))
             return nextRetStmt(semicolon);
 
-        if (at("switch"))
-            return nextSwitchStmt();
-
         if (at("thing"))
             return nextThingStmt(semicolon);
 
@@ -502,38 +498,6 @@ public class Parser {
         expectAndNext("ret"); // skip "ret"
         stmt.value = nextExpr();
         expectAndNext(";"); // skip ;
-
-        return stmt;
-    }
-
-    private SwitchStmt nextSwitchStmt() throws Exception {
-        final var stmt = new SwitchStmt();
-
-        expectAndNext("switch"); // skip "switch"
-        expectAndNext("("); // skip (
-        stmt.switcher = nextExpr();
-        expectAndNext(")"); // skip )
-        expectAndNext("{"); // skip {
-        while (!eof() && !at("}")) {
-            if (at("default")) {
-                next(); // skip "default"
-                expectAndNext(":"); // skip :
-                stmt.defaultCase = at("{")
-                        ? nextEnclosedStmt()
-                        : new Stmt[] { nextStmt(true) };
-                continue;
-            }
-
-            expectAndNext("case"); // skip "case"
-            final var caseExpr = nextExpr();
-            expectAndNext(":"); // skip :
-            final var body = at("{")
-                    ? nextEnclosedStmt()
-                    : new Stmt[] { nextStmt(true) };
-
-            stmt.cases.put(Interpreter.evaluate(mEnvironment, caseExpr), body);
-        }
-        expectAndNext("}"); // skip }
 
         return stmt;
     }

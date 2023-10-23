@@ -1,5 +1,12 @@
 package io.scriptor.csaw.impl;
 
+import static io.scriptor.csaw.impl.Environment.createAlias;
+import static io.scriptor.csaw.impl.Environment.createFunction;
+import static io.scriptor.csaw.impl.Environment.createType;
+import static io.scriptor.csaw.impl.Environment.getFunction;
+import static io.scriptor.csaw.impl.Environment.getOrigin;
+import static io.scriptor.csaw.impl.Environment.isAssignable;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,7 +31,6 @@ import io.scriptor.csaw.impl.stmt.IncStmt;
 import io.scriptor.csaw.impl.stmt.ParStmt;
 import io.scriptor.csaw.impl.stmt.RetStmt;
 import io.scriptor.csaw.impl.stmt.Stmt;
-import io.scriptor.csaw.impl.stmt.SwitchStmt;
 import io.scriptor.csaw.impl.stmt.ThingStmt;
 import io.scriptor.csaw.impl.stmt.VarStmt;
 import io.scriptor.csaw.impl.stmt.WhileStmt;
@@ -57,8 +63,6 @@ public class Interpreter {
             return evaluate(env, (ParStmt) stmt);
         if (stmt instanceof RetStmt)
             return evaluate(env, (RetStmt) stmt);
-        if (stmt instanceof SwitchStmt)
-            return evaluate(env, (SwitchStmt) stmt);
         if (stmt instanceof ThingStmt)
             return evaluate(env, (ThingStmt) stmt);
         if (stmt instanceof VarStmt)
@@ -73,7 +77,7 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, AliasStmt stmt) {
-        env.createAlias(stmt.alias, stmt.origin);
+        createAlias(stmt.alias, stmt.origin);
         return null;
     }
 
@@ -91,7 +95,7 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, FunStmt stmt) {
-        env.createFunction(
+        createFunction(
                 stmt.constructor,
                 stmt.name,
                 stmt.type,
@@ -170,41 +174,19 @@ public class Interpreter {
         return stmt.value == null ? null : evaluate(env, stmt.value).isReturn(true);
     }
 
-    public static Value evaluate(Environment env, SwitchStmt stmt) throws Exception {
-        final var switcher = evaluate(env, stmt.switcher);
-
-        if (!stmt.cases.containsKey(switcher)) {
-            final var environment = new Environment(env);
-            for (final var s : stmt.defaultCase) {
-                final var value = evaluate(environment, s);
-                if (value != null && value.isReturn())
-                    return value;
-            }
-            return null;
-        }
-
-        final var environment = new Environment(env);
-        for (final var s : stmt.cases.get(switcher)) {
-            final var value = evaluate(environment, s);
-            if (value != null && value.isReturn())
-                return value;
-        }
-        return null;
-    }
-
     public static Value evaluate(Environment env, ThingStmt stmt) {
-        env.createType(stmt.group, stmt.name, stmt.fields);
+        createType(stmt.group, stmt.name, stmt.fields);
         return null;
     }
 
     public static Value evaluate(Environment env, VarStmt stmt) throws Exception {
         var value = stmt.value == null ? null : evaluate(env, stmt.value);
 
-        if (value != null && !env.isAssignable(value.getType(), stmt.type))
+        if (value != null && !isAssignable(value.getType(), stmt.type))
             throw new IllegalStateException(
                     String.format("cannot assign value of type '%s' to type '%s'", value.getType(), stmt.type));
         else if (value == null)
-            value = Value.makeValue(env, stmt.type, false);
+            value = Value.makeValue(env, stmt.type, false, false);
 
         env.createVariable(stmt.name, stmt.type, value);
         return null;
@@ -304,8 +286,8 @@ public class Interpreter {
             name = ((MemExpr) expr.function).member;
         }
 
-        final var fun = env.getFunction(member != null ? env.getOrigin(member.getType()) : null, name, argTypes);
-        return fun.body.invoke(member, env, args);
+        final var fun = getFunction(member != null ? getOrigin(member.getType()) : null, name, argTypes);
+        return fun.invoke(member, args);
     }
 
     public static Value evaluate(Environment env, ChrExpr expr) {

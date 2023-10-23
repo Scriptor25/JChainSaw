@@ -1,5 +1,11 @@
 package io.scriptor.java;
 
+import static io.scriptor.csaw.impl.Environment.createAlias;
+import static io.scriptor.csaw.impl.Environment.createType;
+import static io.scriptor.csaw.impl.Environment.getOrigin;
+import static io.scriptor.csaw.impl.Environment.hasAlias;
+import static io.scriptor.csaw.impl.Environment.registerFunction;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -39,8 +45,8 @@ public class Collector {
                     field.type = getType(env, fld.getType());
                     typefields.add(field);
                 }
-                env.createType(null, typename, typefields.toArray(new Parameter[0]));
-                env.createAlias(cls.getName(), typename);
+                createType(null, typename, typefields.toArray(new Parameter[0]));
+                createAlias(cls.getName(), typename);
 
                 final var constructors = cls.getDeclaredConstructors();
                 for (final var cnstr : constructors) {
@@ -52,7 +58,7 @@ public class Collector {
                         for (int i = 0; i < params.length; i++)
                             params[i] = getType(env, cnstr.getParameterTypes()[i]);
 
-                        final IFunBody body = (member, environment, args) -> {
+                        final IFunBody body = (member, args) -> {
                             try {
                                 return new NativeValue(cnstr.newInstance((Object[]) args));
                             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -62,7 +68,7 @@ public class Collector {
                             }
                         };
 
-                        env.registerFunction(
+                        registerFunction(
                                 false,
                                 typename,
                                 typename,
@@ -84,7 +90,7 @@ public class Collector {
                     for (int i = 0; i < params.length; i++)
                         params[i] = getType(env, mthd.getParameterTypes()[i]);
 
-                    final IFunBody body = (member, environment, args) -> {
+                    final IFunBody body = (member, args) -> {
                         final var object = member != null ? member.getValue() : null;
                         if (mthd.isVarArgs()) {
                             final var pc = mthd.getParameterCount() - 1;
@@ -104,7 +110,7 @@ public class Collector {
                             return Value.class.cast(mthd.invoke(object, (Object[]) args));
                     };
 
-                    env.registerFunction(
+                    registerFunction(
                             false,
                             mthd.getName(),
                             getType(env, mthd.getReturnType()),
@@ -133,9 +139,9 @@ public class Collector {
         if (cls.equals(Value.class) || cls.equals(NativeValue.class))
             return Value.TYPE_ANY;
 
-        if (!env.hasAlias(cls.getName()))
+        if (!hasAlias(cls.getName()))
             throw new IllegalStateException(String.format("unhandled class-to-type conversion for class '%s'", cls));
 
-        return env.getOrigin(cls.getName());
+        return getOrigin(cls.getName());
     }
 }
