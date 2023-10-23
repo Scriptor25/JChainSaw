@@ -230,7 +230,7 @@ public class Environment {
                         Arrays.toString(types)));
     }
 
-    public static Value getAndInvoke(Value member, String name, Value... args) throws Exception {
+    public static Value getAndInvoke(Value member, String name, Value... args)  {
         final var types = new String[args == null ? 0 : args.length];
         for (int i = 0; i < types.length; i++)
             types[i] = args[i].getType();

@@ -17,6 +17,7 @@ import io.scriptor.csaw.impl.expr.BinExpr;
 import io.scriptor.csaw.impl.expr.CallExpr;
 import io.scriptor.csaw.impl.expr.ChrExpr;
 import io.scriptor.csaw.impl.expr.ConExpr;
+import io.scriptor.csaw.impl.expr.ConstExpr;
 import io.scriptor.csaw.impl.expr.Expr;
 import io.scriptor.csaw.impl.expr.IdExpr;
 import io.scriptor.csaw.impl.expr.MemExpr;
@@ -45,7 +46,7 @@ public class Interpreter {
     private Interpreter() {
     }
 
-    public static Value evaluate(Environment env, Stmt stmt) throws Exception {
+    public static Value evaluate(Environment env, Stmt stmt)  {
         if (stmt == null)
             return null;
 
@@ -81,7 +82,7 @@ public class Interpreter {
         return null;
     }
 
-    public static Value evaluate(Environment env, ForStmt stmt) throws Exception {
+    public static Value evaluate(Environment env, ForStmt stmt)  {
         final var e = new Environment(env);
         for (evaluate(e, stmt.begin); evaluate(e, stmt.condition).asBoolean(); evaluate(e, stmt.loop)) {
             final var environment = new Environment(e);
@@ -106,10 +107,19 @@ public class Interpreter {
         return null;
     }
 
-    public static Value evaluate(Environment env, IfStmt stmt) throws Exception {
-        final var condition = evaluate(env, stmt.condition);
+    public static Value evaluate(Environment env, IfStmt stmt)  {
         final var e = new Environment(env);
 
+        if (stmt.constant) {
+            for (final var s : (stmt.thenBody != null ? stmt.thenBody : stmt.elseBody)) {
+                final var value = evaluate(e, s);
+                if (value != null && value.isReturn())
+                    return value;
+            }
+            return null;
+        }
+
+        final var condition = evaluate(env, stmt.condition);
         if (condition.asBoolean()) {
             for (final var s : stmt.thenBody) {
                 final var value = evaluate(e, s);
@@ -143,18 +153,18 @@ public class Interpreter {
         return null;
     }
 
-    public static Value evaluate(Environment env, ParStmt stmt) throws Exception {
+    public static Value evaluate(Environment env, ParStmt stmt)  {
 
-        final var from = (int) (double) ((NumValue) evaluate(env, stmt.from)).getValue();
+        final var from = ((NumValue) evaluate(env, stmt.from)).getValue();
         final var length = (int) (double) ((NumValue) evaluate(env, stmt.length)).getValue();
 
-        IntStream.range(from, from + length)
+        IntStream.range(0, length)
                 .parallel()
                 .forEach(i -> {
                     while (true) {
                         try {
                             final var environment = new Environment(env);
-                            environment.createVariable(stmt.variable, Value.TYPE_NUM, new NumValue(i));
+                            environment.createVariable(stmt.variable, Value.TYPE_NUM, new NumValue(i + from));
                             for (final var s : stmt.body) {
                                 final var value = evaluate(environment, s);
                                 if (value != null && value.isReturn())
@@ -170,7 +180,7 @@ public class Interpreter {
         return null;
     }
 
-    public static Value evaluate(Environment env, RetStmt stmt) throws Exception {
+    public static Value evaluate(Environment env, RetStmt stmt)  {
         return stmt.value == null ? null : evaluate(env, stmt.value).isReturn(true);
     }
 
@@ -179,7 +189,7 @@ public class Interpreter {
         return null;
     }
 
-    public static Value evaluate(Environment env, VarStmt stmt) throws Exception {
+    public static Value evaluate(Environment env, VarStmt stmt)  {
         var value = stmt.value == null ? null : evaluate(env, stmt.value);
 
         if (value != null && !isAssignable(value.getType(), stmt.type))
@@ -192,7 +202,7 @@ public class Interpreter {
         return null;
     }
 
-    public static Value evaluate(Environment env, WhileStmt stmt) throws Exception {
+    public static Value evaluate(Environment env, WhileStmt stmt)  {
         final var e = new Environment(env);
         while (evaluate(e, stmt.condition).asBoolean()) {
             final var e1 = new Environment(e);
@@ -206,7 +216,7 @@ public class Interpreter {
         return null;
     }
 
-    public static Value evaluate(Environment env, Expr expr) throws Exception {
+    public static Value evaluate(Environment env, Expr expr)  {
         if (expr instanceof AssignExpr)
             return evaluate(env, (AssignExpr) expr);
         if (expr instanceof BinExpr)
@@ -217,6 +227,8 @@ public class Interpreter {
             return evaluate(env, (ChrExpr) expr);
         if (expr instanceof ConExpr)
             return evaluate(env, (ConExpr) expr);
+        if (expr instanceof ConstExpr)
+            return evaluate(env, (ConstExpr) expr);
         if (expr instanceof IdExpr)
             return evaluate(env, (IdExpr) expr);
         if (expr instanceof MemExpr)
@@ -231,7 +243,7 @@ public class Interpreter {
         throw new RuntimeException();
     }
 
-    public static Value evaluate(Environment env, AssignExpr expr) throws Exception {
+    public static Value evaluate(Environment env, AssignExpr expr)  {
         if (expr.object instanceof IdExpr)
             return env.setVariable(((IdExpr) expr.object).name, evaluate(env, expr.value));
         if (expr.object instanceof MemExpr) {
@@ -242,7 +254,7 @@ public class Interpreter {
         throw new IllegalStateException(String.format("unsupported assign operation %s", expr));
     }
 
-    public static Value evaluate(Environment env, BinExpr expr) throws Exception {
+    public static Value evaluate(Environment env, BinExpr expr)  {
         final var left = evaluate(env, expr.left);
         final var right = evaluate(env, expr.right);
 
@@ -263,12 +275,13 @@ public class Interpreter {
             case "*" -> Value.mul(env, left, right);
             case "/" -> Value.div(env, left, right);
             case "%" -> Value.mod(env, left, right);
+            case "^" -> Value.xor(env, left, right);
 
             default -> throw new IllegalStateException(String.format("unsupported operator '%s'", expr.operator));
         };
     }
 
-    public static Value evaluate(Environment env, CallExpr expr) throws Exception {
+    public static Value evaluate(Environment env, CallExpr expr)  {
         final var args = new Value[expr.arguments.length];
         final var argTypes = new String[expr.arguments.length];
         for (int i = 0; i < args.length; i++) {
@@ -294,17 +307,21 @@ public class Interpreter {
         return new ChrValue(expr.value);
     }
 
-    public static Value evaluate(Environment env, ConExpr expr) throws Exception {
+    public static Value evaluate(Environment env, ConExpr expr)  {
         return evaluate(env, expr.condition).asBoolean()
                 ? evaluate(env, expr.thenExpr)
                 : evaluate(env, expr.elseExpr);
+    }
+
+    public static Value evaluate(Environment env, ConstExpr expr) {
+        return expr.value;
     }
 
     public static Value evaluate(Environment env, IdExpr expr) {
         return env.getVariable(expr.name);
     }
 
-    public static Value evaluate(Environment env, MemExpr expr) throws Exception {
+    public static Value evaluate(Environment env, MemExpr expr)  {
         return ((ObjValue) evaluate(env, expr.object)).getField(expr.member);
     }
 
@@ -316,7 +333,7 @@ public class Interpreter {
         return new StrValue(expr.value);
     }
 
-    public static Value evaluate(Environment env, UnExpr expr) throws Exception {
+    public static Value evaluate(Environment env, UnExpr expr)  {
         final var value = evaluate(env, expr.value);
 
         return switch (expr.operator) {

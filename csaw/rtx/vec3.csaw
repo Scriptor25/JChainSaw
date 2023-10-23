@@ -17,6 +17,10 @@ $vec3 (x: num, y: num, z: num) {
     my.z = v.z;
 }
 
+@copy: vec3 -> vec3 {
+    ret vec3(my.x, my.y, my.z);
+}
+
 @x: num -> vec3 { ret my.x; }
 @y: num -> vec3 { ret my.y; }
 @z: num -> vec3 { ret my.z; }

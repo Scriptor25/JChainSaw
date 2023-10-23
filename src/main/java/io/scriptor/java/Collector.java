@@ -5,6 +5,7 @@ import static io.scriptor.csaw.impl.Environment.createType;
 import static io.scriptor.csaw.impl.Environment.getOrigin;
 import static io.scriptor.csaw.impl.Environment.hasAlias;
 import static io.scriptor.csaw.impl.Environment.registerFunction;
+import static io.scriptor.java.ErrorUtil.tryCatch;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -92,22 +93,12 @@ public class Collector {
 
                     final IFunBody body = (member, args) -> {
                         final var object = member != null ? member.getValue() : null;
-                        if (mthd.isVarArgs()) {
-                            final var pc = mthd.getParameterCount() - 1;
-                            final var allArgs = new Object[pc + 1];
-                            final var varArgs = new Value[args.length - pc];
 
-                            int i = 0;
-                            for (; i < allArgs.length - 1; i++)
-                                allArgs[i] = args[i];
-                            for (int j = i; i < args.length; i++)
-                                varArgs[i - j] = args[i];
-
-                            allArgs[allArgs.length - 1] = varArgs;
-
-                            return Value.class.cast(mthd.invoke(object, allArgs));
-                        } else
-                            return Value.class.cast(mthd.invoke(object, (Object[]) args));
+                        return Value.class.cast(tryCatch(() -> mthd.invoke(
+                                object,
+                                mthd.isVarArgs()
+                                        ? prepareArgs(mthd.getParameterCount(), args)
+                                        : args)));
                     };
 
                     registerFunction(
@@ -121,6 +112,22 @@ public class Collector {
                 }
             }
         }
+    }
+
+    private static Object[] prepareArgs(int paramsCount, Value[] args) {
+        final var pc = paramsCount - 1;
+        final var allArgs = new Object[pc + 1];
+        final var varArgs = new Value[args.length - pc];
+
+        int i = 0;
+        for (; i < allArgs.length - 1; i++)
+            allArgs[i] = args[i];
+        for (int j = i; i < args.length; i++)
+            varArgs[i - j] = args[i];
+
+        allArgs[allArgs.length - 1] = varArgs;
+
+        return allArgs;
     }
 
     private static String getType(Environment env, Class<?> cls) {

@@ -28,6 +28,16 @@ $aabb (box1: aabb, box2: aabb) {
     my.z = interval(box1.z, box2.z);
 }
 
+@pad: aabb -> aabb {
+    ## Return an AABB that has no side narrower than some delta, padding if necessary.
+    num delta = 0.0001;
+    interval new_x = (my.x.size() >= delta) ? my.x : my.x.expand(delta);
+    interval new_y = (my.y.size() >= delta) ? my.y : my.y.expand(delta);
+    interval new_z = (my.z.size() >= delta) ? my.z : my.z.expand(delta);
+
+    ret aabb(new_x, new_y, new_z);
+}
+
 @axis: interval (n: num) -> aabb {
     if (n == 0) ret my.x;
     if (n == 1) ret my.y;

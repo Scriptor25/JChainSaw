@@ -35,5 +35,14 @@ $interval (i: interval) {
     ret x < my.min ? my.min : x > my.max ? my.max : x;
 }
 
+@size: num -> interval {
+    ret my.max - my.min;
+}
+
+@expand: interval (delta: num) -> interval {
+    ret interval(my.min - delta, my.max + delta);
+}
+
 interval empty    = interval( infinity, -infinity);
 interval universe = interval(-infinity,  infinity);
+interval zero_one = interval(0, 1);

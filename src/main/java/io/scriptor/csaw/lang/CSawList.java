@@ -31,6 +31,10 @@ public class CSawList {
         mValues.add(value);
     }
 
+    public void set(NumValue index, Value value) {
+        mValues.set((int) (double) index.getValue(), value);
+    }
+
     public NumValue size() {
         return new NumValue(mValues.size());
     }

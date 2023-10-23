@@ -39,6 +39,22 @@ public class CSawStd {
         return new NumValue(Math.tan(x.getValue()));
     }
 
+    public static NumValue asin(NumValue x) {
+        return new NumValue(Math.asin(x.getValue()));
+    }
+
+    public static NumValue acos(NumValue x) {
+        return new NumValue(Math.acos(x.getValue()));
+    }
+
+    public static NumValue atan(NumValue x) {
+        return new NumValue(Math.atan(x.getValue()));
+    }
+
+    public static NumValue atan2(NumValue y, NumValue x) {
+        return new NumValue(Math.atan2(y.getValue(), x.getValue()));
+    }
+
     public static NumValue sqrt(NumValue x) {
         return new NumValue(Math.sqrt(x.getValue()));
     }

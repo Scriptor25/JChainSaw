@@ -3,6 +3,8 @@ thing: hit_record {
     normal: vec3,
     mat: material,
     t: num,
+    u: num,
+    v: num,
     front_face: bool
 }
 
@@ -11,6 +13,8 @@ thing: hit_record {
     my.normal = rec.normal;
     my.mat = rec.mat;
     my.t = rec.t;
+    my.u = rec.u;
+    my.v = rec.v;
     my.front_face = rec.front_face;
 }
 

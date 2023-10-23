@@ -4,6 +4,8 @@ import io.scriptor.csaw.impl.expr.Expr;
 
 public class IfStmt extends Stmt {
 
+    public boolean constant = false;
+
     public Expr condition;
     public Stmt[] thenBody;
     public Stmt[] elseBody;

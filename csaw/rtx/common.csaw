@@ -1,3 +1,7 @@
+thing: num_ptr {
+    value: num
+}
+
 ## Constants
 num infinity = infinity();
 num pi = 3.1415926535897932385;
@@ -34,11 +38,14 @@ inc "bool.csaw";
 inc "interval.csaw";
 inc "vec3.csaw";
 inc "color.csaw";
+inc "perlin.csaw";
+inc "texture.csaw";
 inc "ray.csaw";
 inc "aabb.csaw";
 inc "material.csaw";
 inc "hittable.csaw";
 inc "sphere.csaw";
 inc "hittable_list.csaw";
+inc "quad.csaw";
 inc "bvh.csaw";
 inc "camera.csaw";

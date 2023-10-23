@@ -61,6 +61,12 @@ $sphere (cen1: point3, cen2: point3, rad: num, mat: material) {
     rec.set_face_normal(r, outward_normal);
     rec.mat = my.mat;
 
+    num_ptr u;
+    num_ptr v;
+    get_sphere_uv(outward_normal, u, v);
+    rec.u = u.value;
+    rec.v = v.value;
+
     ret true;
 }
 
@@ -68,4 +74,19 @@ $sphere (cen1: point3, cen2: point3, rad: num, mat: material) {
     ## Linearly interpolate from center1 to center2 according to time, where t=0 yields
     ## center1, and t=1 yields center2.
     ret my.center1 + time * my.center_vec;
+}
+
+@get_sphere_uv (p: point3, u: num_ptr, v: num_ptr) {
+    ## p: a given point on the sphere of radius one, centered at the origin.
+    ## u: returned value [0,1] of angle around the Y axis from X=-1.
+    ## v: returned value [0,1] of angle from Y=-1 to Y=+1.
+    ##     <1 0 0> yields <0.50 0.50>       <-1  0  0> yields <0.00 0.50>
+    ##     <0 1 0> yields <0.50 1.00>       < 0 -1  0> yields <0.50 0.00>
+    ##     <0 0 1> yields <0.25 0.50>       < 0  0 -1> yields <0.75 0.50>
+
+    num theta = acos(-p.y());
+    num phi = atan2(-p.z(), p.x()) + pi;
+
+    u.value = phi / (2 * pi);
+    v.value = theta / pi;
 }

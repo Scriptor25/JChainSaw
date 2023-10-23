@@ -1,0 +1,73 @@
+thing: quad : hittable {
+    Q: point3,
+    u: vec3,
+    v: vec3,
+    mat: material,
+    bbox: aabb,
+    normal: vec3,
+    D: num,
+    w: vec3
+}
+
+$quad (Q: point3, u: vec3, v: vec3, m: material) {
+    my.Q = Q;
+    my.u = u;
+    my.v = v;
+    my.mat = m;
+
+    vec3 n = cross(u, v);
+    my.normal = unit_vector(n);
+    my.D = dot(my.normal, Q);
+    my.w = n / dot(n, n);
+
+    my.set_bounding_box();
+}
+
+@set_bounding_box -> quad {
+    my.bbox = aabb(my.Q, my.Q + my.u + my.v).pad();
+}
+
+@bounding_box: aabb -> quad { ret my.bbox; }
+
+@hit: bool (r: ray, ray_t: interval, rec: hit_record) -> quad {
+    num denom = dot(my.normal, r.direction());
+
+    ## No hit if the ray is parallel to the plane.
+    if (abs(denom) < 1e-8)
+        ret false;
+
+    ## Return false if the hit point parameter t is outside the ray interval.
+    num t = (my.D - dot(my.normal, r.origin())) / denom;
+    if (!ray_t.contains(t))
+        ret false;
+
+    ## Determine the hit point lies within the planar shape using its plane coordinates.
+    point3 intersection = r.at(t);
+    vec3 planar_hitpt_vector = intersection - my.Q;
+    num alpha = dot(my.w, cross(planar_hitpt_vector, my.v));
+    num beta = dot(my.w, cross(my.u, planar_hitpt_vector));
+
+    if (!is_interior(alpha, beta, rec))
+        ret false;
+
+    ## Ray hits the 2D shape; set the rest of the hit record and return true.
+
+    rec.t = t;
+    rec.p = intersection;
+    rec.mat = my.mat;
+    rec.set_face_normal(r, my.normal);
+
+    ret true;
+}
+
+@is_interior: bool (a: num, b: num, rec: hit_record) {
+    ## Given the hit point in plane coordinates, return false if it is outside the
+    ## primitive, otherwise set the hit record UV coordinates and return true.
+
+    if ((a < 0) || (1 < a) || (b < 0) || (1 < b))
+        ret false;
+
+    rec.u = a;
+    rec.v = b;
+    ret true;
+}

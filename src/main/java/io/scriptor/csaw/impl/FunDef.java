@@ -25,7 +25,7 @@ public class FunDef {
         }
 
         @Override
-        public Value invoke(Value member, Value... args) throws Exception {
+        public Value invoke(Value member, Value... args)  {
             final var env = new Environment(getGlobal());
             for (int i = 0; i < args.length; i++)
                 env.createVariable(parameters[i], definition.parameters[i], args[i]);
@@ -46,7 +46,7 @@ public class FunDef {
 
             if (definition.constructor) {
                 if (value != null)
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("a constructor must not return anything");
                 return env.getVariable("my");
             }
 
@@ -126,7 +126,7 @@ public class FunDef {
             ((FunBody) body).definition = this;
     }
 
-    public Value invoke(Value member, Value... args) throws Exception {
+    public Value invoke(Value member, Value... args)  {
         return body.invoke(member, args);
     }
 }
