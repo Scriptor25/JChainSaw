@@ -80,4 +80,8 @@ public class CSawStd {
     public static NumValue num(StrValue x) {
         return new NumValue(Double.parseDouble(x.getValue()));
     }
+
+    public static NumValue time() {
+        return new NumValue(System.currentTimeMillis());
+    }
 }

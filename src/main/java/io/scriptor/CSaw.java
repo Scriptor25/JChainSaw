@@ -55,7 +55,7 @@ public class CSaw {
             try {
                 Parser.parse(new ByteArrayInputStream(input.getBytes()), env);
             } catch (Throwable t) {
-                System.out.println(t);
+                System.out.println(t.getMessage());
             }
         }
     }
