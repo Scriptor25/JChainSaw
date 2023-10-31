@@ -22,8 +22,6 @@ import io.scriptor.csaw.impl.expr.StrExpr;
 import io.scriptor.csaw.impl.expr.UnExpr;
 import io.scriptor.csaw.impl.interpreter.Environment;
 import io.scriptor.csaw.impl.interpreter.Interpreter;
-import io.scriptor.csaw.impl.llvm.CSawContext;
-import io.scriptor.csaw.impl.llvm.IRBuilder;
 import io.scriptor.csaw.impl.stmt.AliasStmt;
 import io.scriptor.csaw.impl.stmt.EnclosedStmt;
 import io.scriptor.csaw.impl.stmt.ForStmt;
@@ -80,21 +78,6 @@ public class Parser {
             final var stmt = parser.nextStmt(true);
             Interpreter.evaluate(env, stmt);
         }
-    }
-
-    public static void parse(InputStream stream, CSawContext ctx) {
-        final var parser = new Parser(stream);
-
-        IRBuilder.initLLVM(ctx.getFile().getName());
-
-        parser.next();
-        while (parser.mToken.type != TokenType.EOF) {
-            final var stmt = parser.nextStmt(true);
-            IRBuilder.build(ctx, stmt);
-        }
-
-        IRBuilder.verify();
-        IRBuilder.optimize();
     }
 
     private final BufferedReader mReader;

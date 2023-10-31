@@ -63,9 +63,6 @@ public class CSaw {
     public static void run(String path) {
         final var file = new File(path);
 
-        // final var ctx = new CSawContext(file);
-        // new Parser(new FileInputStream(file), ctx);
-
         final var env = Environment.initGlobal(file.getParent());
         Collector.collect(env);
 
