@@ -1,14 +1,15 @@
 package io.scriptor.csaw.lang;
 
-import static io.scriptor.csaw.impl.Environment.getFunction;
+import static io.scriptor.csaw.impl.Types.TYPE_ANY;
+import static io.scriptor.csaw.impl.interpreter.Environment.getFunction;
 
 import java.util.List;
 import java.util.Vector;
 
-import io.scriptor.csaw.impl.value.NativeValue;
-import io.scriptor.csaw.impl.value.NumValue;
-import io.scriptor.csaw.impl.value.StrValue;
-import io.scriptor.csaw.impl.value.Value;
+import io.scriptor.csaw.impl.interpreter.value.NativeValue;
+import io.scriptor.csaw.impl.interpreter.value.NumValue;
+import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("list")
@@ -46,15 +47,10 @@ public class CSawList {
 
     public NativeValue sort(StrValue comparator) {
         final var list = new CSawList(mValues);
-        final var cmp = getFunction(null, comparator.getValue(), new String[] { Value.TYPE_ANY, Value.TYPE_ANY });
+        final var cmp = getFunction(null, comparator.getValue(), new String[] { TYPE_ANY, TYPE_ANY });
         list.mValues.sort((v1, v2) -> {
-            try {
-                final var val = ((NumValue) cmp.invoke(null, v1, v2)).getValue();
-                return (int) (double) val;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
-            }
+            final var val = ((NumValue) cmp.invoke(null, v1, v2)).getValue();
+            return (int) (double) val;
         });
 
         return new NativeValue(list);

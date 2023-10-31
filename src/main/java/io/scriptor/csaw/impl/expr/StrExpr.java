@@ -12,9 +12,4 @@ public class StrExpr extends Expr {
     public String toString() {
         return String.format("\"%s\"", value);
     }
-
-    @Override
-    public boolean isConstant() {
-        return true;
-    }
 }

@@ -7,7 +7,7 @@ public class AliasStmt extends Stmt {
 
     @Override
     public String toString() {
-        return String.format("alias %s : %s;", alias, origin);
+        return String.format("alias %s : %s", alias, origin);
     }
 
 }

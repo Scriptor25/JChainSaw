@@ -1,6 +1,6 @@
-package io.scriptor.csaw.impl;
+package io.scriptor.csaw.impl.interpreter;
 
-import io.scriptor.csaw.impl.value.Value;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 
 @FunctionalInterface
 public interface IFunBody {

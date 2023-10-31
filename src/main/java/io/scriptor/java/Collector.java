@@ -1,26 +1,30 @@
 package io.scriptor.java;
 
-import static io.scriptor.csaw.impl.Environment.createAlias;
-import static io.scriptor.csaw.impl.Environment.createType;
-import static io.scriptor.csaw.impl.Environment.getOrigin;
-import static io.scriptor.csaw.impl.Environment.hasAlias;
-import static io.scriptor.csaw.impl.Environment.registerFunction;
+import static io.scriptor.csaw.impl.Types.TYPE_ANY;
+import static io.scriptor.csaw.impl.Types.TYPE_CHR;
+import static io.scriptor.csaw.impl.Types.TYPE_NUM;
+import static io.scriptor.csaw.impl.Types.TYPE_STR;
+import static io.scriptor.csaw.impl.interpreter.Environment.createAlias;
+import static io.scriptor.csaw.impl.interpreter.Environment.createType;
+import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
+import static io.scriptor.csaw.impl.interpreter.Environment.hasAlias;
+import static io.scriptor.csaw.impl.interpreter.Environment.registerFunction;
 import static io.scriptor.java.ErrorUtil.tryCatch;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Vector;
 
 import io.github.classgraph.ClassGraph;
-import io.scriptor.csaw.impl.Environment;
-import io.scriptor.csaw.impl.IFunBody;
+import io.scriptor.csaw.impl.CSawException;
 import io.scriptor.csaw.impl.Parameter;
-import io.scriptor.csaw.impl.value.ChrValue;
-import io.scriptor.csaw.impl.value.NativeValue;
-import io.scriptor.csaw.impl.value.NumValue;
-import io.scriptor.csaw.impl.value.StrValue;
-import io.scriptor.csaw.impl.value.Value;
+import io.scriptor.csaw.impl.interpreter.Environment;
+import io.scriptor.csaw.impl.interpreter.IFunBody;
+import io.scriptor.csaw.impl.interpreter.value.ChrValue;
+import io.scriptor.csaw.impl.interpreter.value.NativeValue;
+import io.scriptor.csaw.impl.interpreter.value.NumValue;
+import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 
 public class Collector {
 
@@ -33,7 +37,6 @@ public class Collector {
             final var classes = result.getClassesWithAnnotation(CSawNative.class).loadClasses();
             for (final var cls : classes) {
                 final var typename = cls.getAnnotation(CSawNative.class).value().trim();
-                // System.out.printf("%s: '%s'%n", cls, typename);
 
                 final var fields = cls.getDeclaredFields();
                 final List<Parameter> typefields = new Vector<>();
@@ -54,32 +57,22 @@ public class Collector {
                     if (!Modifier.isPublic(cnstr.getModifiers()))
                         continue;
 
-                    try {
-                        final var params = new String[cnstr.getParameterCount() - (cnstr.isVarArgs() ? 1 : 0)];
-                        for (int i = 0; i < params.length; i++)
-                            params[i] = getType(env, cnstr.getParameterTypes()[i]);
+                    final var params = new String[cnstr.getParameterCount() - (cnstr.isVarArgs() ? 1 : 0)];
+                    for (int i = 0; i < params.length; i++)
+                        params[i] = getType(env, cnstr.getParameterTypes()[i]);
 
-                        final IFunBody body = (member, args) -> {
-                            try {
-                                return new NativeValue(cnstr.newInstance((Object[]) args));
-                            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
-                                    | InstantiationException e) {
-                                e.printStackTrace();
-                                return null;
-                            }
-                        };
+                    final IFunBody body = (member, args) -> {
+                        return tryCatch(() -> new NativeValue(cnstr.newInstance((Object[]) args)));
+                    };
 
-                        registerFunction(
-                                false,
-                                typename,
-                                typename,
-                                params,
-                                cnstr.isVarArgs(),
-                                null,
-                                body);
-                    } catch (IllegalStateException e) {
-                        System.out.println(e.getMessage());
-                    }
+                    registerFunction(
+                            false,
+                            typename,
+                            typename,
+                            params,
+                            cnstr.isVarArgs(),
+                            null,
+                            body);
                 }
 
                 final var methods = cls.getDeclaredMethods();
@@ -135,19 +128,19 @@ public class Collector {
             return null;
 
         if (cls.equals(NumValue.class))
-            return Value.TYPE_NUM;
+            return TYPE_NUM;
 
         if (cls.equals(ChrValue.class))
-            return Value.TYPE_CHR;
+            return TYPE_CHR;
 
         if (cls.equals(StrValue.class))
-            return Value.TYPE_STR;
+            return TYPE_STR;
 
         if (cls.equals(Value.class) || cls.equals(NativeValue.class))
-            return Value.TYPE_ANY;
+            return TYPE_ANY;
 
         if (!hasAlias(cls.getName()))
-            throw new IllegalStateException(String.format("unhandled class-to-type conversion for class '%s'", cls));
+            throw new CSawException("unhandled class-to-type conversion for class '%s'", cls);
 
         return getOrigin(cls.getName());
     }

@@ -6,10 +6,34 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Main",
+            "name": "CSaw Shell",
             "request": "launch",
-            "mainClass": "io.scriptor.Main",
+            "mainClass": "io.scriptor.CSaw",
             "projectName": "csaw"
+        },
+        {
+            "type": "java",
+            "name": "CSaw Mandel",
+            "request": "launch",
+            "mainClass": "io.scriptor.CSaw",
+            "projectName": "csaw",
+            "args": ["csaw/mandel/main.csaw"]
+        },
+        {
+            "type": "java",
+            "name": "CSaw Ghost",
+            "request": "launch",
+            "mainClass": "io.scriptor.CSaw",
+            "projectName": "csaw",
+            "args": ["csaw/ghost/main.csaw"]
+        },
+        {
+            "type": "java",
+            "name": "CSaw RTX",
+            "request": "launch",
+            "mainClass": "io.scriptor.CSaw",
+            "projectName": "csaw",
+            "args": ["csaw/rtx/main.csaw"]
         }
     ]
 }

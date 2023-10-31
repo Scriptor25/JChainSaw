@@ -8,8 +8,8 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 
-import io.scriptor.csaw.impl.value.StrValue;
-import io.scriptor.csaw.impl.value.Value;
+import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("file")

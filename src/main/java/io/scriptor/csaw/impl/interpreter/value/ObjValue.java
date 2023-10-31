@@ -1,10 +1,10 @@
-package io.scriptor.csaw.impl.value;
+package io.scriptor.csaw.impl.interpreter.value;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import io.scriptor.csaw.impl.Environment;
 import io.scriptor.csaw.impl.Pair;
+import io.scriptor.csaw.impl.interpreter.Environment;
 
 public class ObjValue extends Value {
 

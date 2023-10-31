@@ -1,8 +1,8 @@
 package io.scriptor.csaw.lang;
 
-import io.scriptor.csaw.impl.value.NumValue;
-import io.scriptor.csaw.impl.value.StrValue;
-import io.scriptor.csaw.impl.value.Value;
+import io.scriptor.csaw.impl.interpreter.value.NumValue;
+import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("std")

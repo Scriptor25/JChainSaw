@@ -1,4 +1,6 @@
-package io.scriptor.csaw.impl;
+package io.scriptor.csaw.impl.interpreter;
+
+import static io.scriptor.csaw.impl.Types.TYPE_ANY;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -6,8 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import io.scriptor.csaw.impl.stmt.Stmt;
-import io.scriptor.csaw.impl.value.Value;
+import io.scriptor.csaw.impl.CSawException;
+import io.scriptor.csaw.impl.Pair;
+import io.scriptor.csaw.impl.Parameter;
+import io.scriptor.csaw.impl.interpreter.value.Value;
+import io.scriptor.csaw.impl.stmt.EnclosedStmt;
 
 public class Environment {
 
@@ -26,81 +31,13 @@ public class Environment {
         return GLOBAL;
     }
 
-    private final Environment mParent;
-    private final Map<String, Pair<String, Value>> mVariables = new HashMap<>();
-    private String mPath;
+    public static void reset() {
+        GLOBAL.mVariables.clear();
 
-    private Environment(String path) {
-        mParent = null;
-        mPath = path;
-    }
-
-    public Environment(Environment parent) {
-        mParent = parent;
-        mPath = parent.mPath;
-    }
-
-    public boolean isGlobal() {
-        return mParent == null;
-    }
-
-    public Environment setPath(String path) {
-        mPath = path;
-        return this;
-    }
-
-    public String getPath() {
-        return mPath;
-    }
-
-    public boolean hasVariable(String id) {
-        return mVariables.containsKey(id);
-    }
-
-    public boolean existsVariable(String id) {
-        if (hasVariable(id))
-            return true;
-        if (isGlobal())
-            return false;
-        return mParent.existsVariable(id);
-    }
-
-    public <V extends Value> V createVariable(String id, String type, V value) {
-        if (hasVariable(id))
-            throw new IllegalStateException(String.format("variable '%s' already defined", id));
-        mVariables.put(id, new Pair<>(type, value));
-        return value;
-    }
-
-    private Pair<String, Value> getVarEntry(String id) {
-        if (!hasVariable(id))
-            if (isGlobal())
-                throw new IllegalStateException(String.format("undefined variable '%s'", id));
-            else
-                return mParent.getVarEntry(id);
-        return mVariables.get(id);
-    }
-
-    public Value getVariable(String id) {
-        if (!existsVariable(id))
-            throw new IllegalStateException(String.format("undefined variable '%s'", id));
-        return getVarEntry(id).second;
-    }
-
-    public <V extends Value> V setVariable(String id, V value) {
-        if (!existsVariable(id))
-            throw new IllegalStateException(String.format("undefined variable '%s'", id));
-
-        final var variable = getVarEntry(id);
-        if (!isAssignable(value.getType(), variable.first))
-            throw new RuntimeException(String.format(
-                    "variable '%s' (%s) cannot be assigned to value of type '%s'",
-                    id,
-                    variable.first,
-                    value.getType()));
-
-        variable.second = value;
-        return value;
+        FUNCTIONS.clear();
+        ALIAS.clear();
+        TYPES.clear();
+        GROUPS.clear();
     }
 
     public static boolean hasFunction(String member, String name, String... types) {
@@ -129,7 +66,7 @@ public class Environment {
             Parameter[] params,
             boolean vararg,
             String member,
-            Stmt[] body) {
+            EnclosedStmt body) {
 
         final var paramc = params == null ? 0 : params.length;
 
@@ -141,11 +78,11 @@ public class Environment {
         }
 
         if (hasFunction(member, name, paramTypes))
-            throw new RuntimeException(
-                    String.format("function '%s' %s already defined on type '%s'",
-                            name,
-                            Arrays.toString(paramTypes),
-                            member));
+            throw new CSawException(
+                    "function '%s' %s already defined on type '%s'",
+                    name,
+                    Arrays.toString(paramTypes),
+                    member);
 
         final var fun = new FunDef.Builder()
                 .constructor(constructor)
@@ -180,11 +117,11 @@ public class Environment {
             parameters[i] = params[i];
 
         if (hasFunction(member, name, parameters))
-            throw new RuntimeException(
-                    String.format("function '%s' %s already defined on type '%s'",
-                            name,
-                            Arrays.toString(parameters),
-                            member));
+            throw new CSawException(
+                    "function '%s' %s already defined on type '%s'",
+                    name,
+                    Arrays.toString(parameters),
+                    member);
 
         final var fun = new FunDef.Builder()
                 .constructor(constructor)
@@ -223,14 +160,14 @@ public class Environment {
             }
         }
 
-        throw new IllegalStateException(
-                String.format("undefined function '%s', member of '%s', types %s",
-                        name,
-                        member,
-                        Arrays.toString(types)));
+        throw new CSawException(
+                "undefined function '%s', member of '%s', types %s",
+                name,
+                member,
+                Arrays.toString(types));
     }
 
-    public static Value getAndInvoke(Value member, String name, Value... args)  {
+    public static Value getAndInvoke(Value member, String name, Value... args) {
         final var types = new String[args == null ? 0 : args.length];
         for (int i = 0; i < types.length; i++)
             types[i] = args[i].getType();
@@ -244,13 +181,13 @@ public class Environment {
 
     public static void createAlias(String alias, String type) {
         if (hasAlias(type))
-            throw new IllegalStateException(String.format("alias already defined for type '%s'", type));
+            throw new CSawException("alias already defined for type '%s'", type);
         ALIAS.put(alias, type);
     }
 
     public static String getAlias(String type) {
         if (!hasAlias(type))
-            throw new IllegalStateException(String.format("undefined alias for type '%s'", type));
+            throw new CSawException("undefined alias for type '%s'", type);
         return ALIAS.get(type);
     }
 
@@ -267,7 +204,7 @@ public class Environment {
     public static void createType(String group, String name, Parameter[] fields) {
         if (hasType(name)) {
             if (getType(name) != null) // type is not opaque
-                throw new IllegalStateException(String.format("cannot redefine non-opaque type '%s'", name));
+                throw new CSawException("cannot redefine non-opaque type '%s'", name);
             TYPES.put(name, fields);
             return;
         }
@@ -279,7 +216,7 @@ public class Environment {
     public static Parameter[] getType(String type) {
         if (!hasType(type))
             if (!hasAlias(type))
-                throw new IllegalStateException(String.format("undefined type '%s'", type));
+                throw new CSawException("undefined type '%s'", type);
             else
                 return getType(getAlias(type));
         return TYPES.get(type);
@@ -290,10 +227,65 @@ public class Environment {
     }
 
     public static boolean isAssignable(String type, String to) {
-        if (Value.TYPE_ANY.equals(to) || Value.TYPE_ANY.equals(type) || isAliasFor(type, to))
+        if (TYPE_ANY.equals(to) || TYPE_ANY.equals(type) || isAliasFor(type, to))
             return true;
         if (GROUPS.containsKey(to))
             return GROUPS.get(to).contains(type);
         return false;
+    }
+
+    private final Map<String, Pair<String, Value>> mVariables = new HashMap<>();
+    private String mPath;
+
+    private Environment(String path) {
+        mPath = path;
+    }
+
+    public Environment(Environment parent) {
+        mVariables.putAll(parent.mVariables);
+        mPath = parent.mPath;
+    }
+
+    public Environment setPath(String path) {
+        mPath = path;
+        return this;
+    }
+
+    public String getPath() {
+        return mPath;
+    }
+
+    public boolean hasVariable(String id) {
+        return mVariables.containsKey(id);
+    }
+
+    public <V extends Value> V createVariable(String id, String type, V value) {
+        if (hasVariable(id))
+            throw new CSawException("variable '%s' already defined", id);
+        mVariables.put(id, new Pair<>(type, value));
+        return value;
+    }
+
+    private Pair<String, Value> getVarEntry(String id) {
+        if (!hasVariable(id))
+            throw new CSawException("undefined variable '%s'", id);
+        return mVariables.get(id);
+    }
+
+    public Value getVariable(String id) {
+        return getVarEntry(id).second;
+    }
+
+    public <V extends Value> V setVariable(String id, V value) {
+        final var variable = getVarEntry(id);
+        if (!isAssignable(value.getType(), variable.first))
+            throw new CSawException(
+                    "variable '%s' (%s) cannot be assigned to value of type '%s'",
+                    id,
+                    variable.first,
+                    value.getType());
+
+        variable.second = value;
+        return value;
     }
 }

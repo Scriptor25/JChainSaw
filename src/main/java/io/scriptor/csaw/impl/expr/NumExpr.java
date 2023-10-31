@@ -16,9 +16,4 @@ public class NumExpr extends Expr {
     public String toString() {
         return Double.toString(value);
     }
-
-    @Override
-    public boolean isConstant() {
-        return true;
-    }
 }

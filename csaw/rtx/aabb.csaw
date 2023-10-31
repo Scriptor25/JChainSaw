@@ -45,6 +45,14 @@ $aabb (box1: aabb, box2: aabb) {
     ret interval();
 }
 
+@(+): aabb (bbox: aabb, offset: vec3) {
+    ret aabb(bbox.x + offset.x(), bbox.y + offset.y(), bbox.z + offset.z());
+}
+
+@(+): aabb (offset: vec3, bbox: aabb) {
+    ret bbox + offset;
+}
+
 @hit: bool (r: ray, ray_t: interval) -> aabb {
     ray_t = interval(ray_t);
     for (num a = 0; a < 3; a++) {

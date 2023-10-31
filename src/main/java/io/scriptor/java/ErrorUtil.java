@@ -1,5 +1,7 @@
 package io.scriptor.java;
 
+import io.scriptor.csaw.impl.CSawException;
+
 public class ErrorUtil {
 
     @FunctionalInterface
@@ -18,7 +20,7 @@ public class ErrorUtil {
         try {
             return catchIt.run();
         } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw new CSawException(e);
         }
     }
 
@@ -26,7 +28,11 @@ public class ErrorUtil {
         try {
             catchVoid.run();
         } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw new CSawException(e);
         }
+    }
+
+    public static <T> T error(String fmt, Object... args) {
+        throw new CSawException(fmt, args);
     }
 }

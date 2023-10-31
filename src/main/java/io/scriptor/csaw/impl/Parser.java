@@ -14,19 +14,22 @@ import io.scriptor.csaw.impl.expr.BinExpr;
 import io.scriptor.csaw.impl.expr.CallExpr;
 import io.scriptor.csaw.impl.expr.ChrExpr;
 import io.scriptor.csaw.impl.expr.ConExpr;
-import io.scriptor.csaw.impl.expr.ConstExpr;
 import io.scriptor.csaw.impl.expr.Expr;
 import io.scriptor.csaw.impl.expr.IdExpr;
 import io.scriptor.csaw.impl.expr.MemExpr;
 import io.scriptor.csaw.impl.expr.NumExpr;
 import io.scriptor.csaw.impl.expr.StrExpr;
 import io.scriptor.csaw.impl.expr.UnExpr;
+import io.scriptor.csaw.impl.interpreter.Environment;
+import io.scriptor.csaw.impl.interpreter.Interpreter;
+import io.scriptor.csaw.impl.llvm.CSawContext;
+import io.scriptor.csaw.impl.llvm.IRBuilder;
 import io.scriptor.csaw.impl.stmt.AliasStmt;
+import io.scriptor.csaw.impl.stmt.EnclosedStmt;
 import io.scriptor.csaw.impl.stmt.ForStmt;
 import io.scriptor.csaw.impl.stmt.FunStmt;
 import io.scriptor.csaw.impl.stmt.IfStmt;
 import io.scriptor.csaw.impl.stmt.IncStmt;
-import io.scriptor.csaw.impl.stmt.ParStmt;
 import io.scriptor.csaw.impl.stmt.RetStmt;
 import io.scriptor.csaw.impl.stmt.Stmt;
 import io.scriptor.csaw.impl.stmt.ThingStmt;
@@ -69,31 +72,36 @@ public class Parser {
         }
     }
 
-    private final BufferedReader mReader;
-    private final Environment mEnvironment;
-    private Token mToken;
-    private int mLine = 1;
+    public static void parse(InputStream stream, Environment env) {
+        final var parser = new Parser(stream);
 
-    public Parser(InputStream stream, Environment env) {
-        mReader = new BufferedReader(new InputStreamReader(stream));
-        mEnvironment = env;
+        parser.next();
+        while (!parser.eof()) {
+            final var stmt = parser.nextStmt(true);
+            Interpreter.evaluate(env, stmt);
+        }
     }
 
-    public boolean start() {
-        try {
-            next(); // prepare first token
-            while (mToken.type != TokenType.EOF) {
-                final var stmt = nextStmt(true);
-                // System.out.println(stmt);
-                /* final var value = */
-                Interpreter.evaluate(mEnvironment, stmt);
-                // System.out.println(value);
-            }
-            return true;
-        } catch (Exception e) {
-            System.err.printf("At line %d: %s%n", mLine, e.getMessage());
-            return false;
+    public static void parse(InputStream stream, CSawContext ctx) {
+        final var parser = new Parser(stream);
+
+        IRBuilder.initLLVM(ctx.getFile().getName());
+
+        parser.next();
+        while (parser.mToken.type != TokenType.EOF) {
+            final var stmt = parser.nextStmt(true);
+            IRBuilder.build(ctx, stmt);
         }
+
+        IRBuilder.verify();
+        IRBuilder.optimize();
+    }
+
+    private final BufferedReader mReader;
+    private Token mToken;
+
+    private Parser(InputStream stream) {
+        mReader = new BufferedReader(new InputStreamReader(stream));
     }
 
     private int reader_read() {
@@ -111,11 +119,8 @@ public class Parser {
     private Token next() {
         int c = reader_read();
 
-        while (isIgnorable(c)) {
-            if (c == '\n')
-                mLine++;
+        while (isIgnorable(c))
             c = reader_read();
-        }
 
         if (c < 0)
             return mToken = Token.EOF();
@@ -124,8 +129,7 @@ public class Parser {
             c = reader_read();
             final char LIMIT = c == '#' ? '\n' : '#';
             while ((c = reader_read()) != LIMIT && c >= 0)
-                if (c == '\n')
-                    mLine++;
+                ;
             return next();
         }
 
@@ -264,13 +268,13 @@ public class Parser {
     private boolean expect(String value) {
         if (at(value))
             return true;
-        throw new IllegalStateException(String.format("unexpected token %s, expected value '%s'", mToken, value));
+        throw new CSawException("unexpected token %s, expected value '%s'", mToken, value);
     }
 
     private boolean expect(TokenType type) {
         if (at(type))
             return true;
-        throw new IllegalStateException(String.format("unexpected token %s, expected type %s", mToken, type));
+        throw new CSawException("unexpected token %s, expected type %s", mToken, type);
     }
 
     private boolean expectAndNext(String value) {
@@ -291,6 +295,9 @@ public class Parser {
 
     private Stmt nextStmt(boolean semicolon) {
 
+        if (at("{"))
+            return nextEnclosedStmt();
+
         if (at("alias"))
             return nextAliasStmt(semicolon);
 
@@ -305,9 +312,6 @@ public class Parser {
 
         if (at("inc"))
             return nextIncStmt(semicolon);
-
-        if (at("par"))
-            return nextParStmt(semicolon);
 
         if (at("ret"))
             return nextRetStmt(semicolon);
@@ -327,23 +331,21 @@ public class Parser {
         if (semicolon)
             expectAndNext(";"); // skip ;
 
-        if (expr.isConstant())
-            expr = new ConstExpr(expr);
-
         return expr;
     }
 
-    private Stmt[] nextEnclosedStmt() {
+    private EnclosedStmt nextEnclosedStmt() {
         expectAndNext("{"); // skip {
 
         final List<Stmt> enclosed = new Vector<>();
         while (!eof() && !at("}")) {
-            enclosed.add(nextStmt(true));
+            final var stmt = nextStmt(true);
+            if (stmt != null)
+                enclosed.add(stmt);
         }
-
         expectAndNext("}"); // skip }
 
-        return enclosed.toArray(new Stmt[0]);
+        return new EnclosedStmt(enclosed.toArray(new Stmt[0]));
     }
 
     private AliasStmt nextAliasStmt(boolean semicolon) {
@@ -376,17 +378,7 @@ public class Parser {
             stmt.loop = nextStmt(false);
         expectAndNext(")"); // skip )
 
-        if (at("{"))
-            stmt.body = nextEnclosedStmt();
-        else
-            stmt.body = new Stmt[] { nextStmt(semicolon) };
-
-        if (stmt.condition.isConstant()) {
-            final var constexpr = new ConstExpr(stmt.condition);
-            if (!constexpr.value.asBoolean())
-                return null; // for loop will never be executed
-            stmt.condition = constexpr;
-        }
+        stmt.body = nextStmt(semicolon);
 
         return stmt;
     }
@@ -469,30 +461,11 @@ public class Parser {
         stmt.condition = nextExpr();
         expectAndNext(")"); // skip )
 
-        if (at("{"))
-            stmt.thenBody = nextEnclosedStmt();
-        else
-            stmt.thenBody = new Stmt[] { nextStmt(semicolon) };
+        stmt.thenBody = nextStmt(semicolon);
 
         if (at("else")) {
             next(); // skip "else"
-            if (at("{"))
-                stmt.elseBody = nextEnclosedStmt();
-            else
-                stmt.elseBody = new Stmt[] { nextStmt(semicolon) };
-        }
-
-        if (stmt.condition.isConstant()) {
-            final var constexpr = new ConstExpr(stmt.condition);
-            stmt.constant = true;
-            if (constexpr.value.asBoolean()) { // will always be true
-                stmt.elseBody = null;
-            } else { // will always be false
-                if (stmt.elseBody != null)
-                    stmt.thenBody = null;
-                else // nothing to execute
-                    return null;
-            }
+            stmt.elseBody = nextStmt(semicolon);
         }
 
         return stmt;
@@ -509,34 +482,11 @@ public class Parser {
         return stmt;
     }
 
-    private ParStmt nextParStmt(boolean semicolon) {
-        final var stmt = new ParStmt();
-
-        expectAndNext("par"); // skip "par"
-        expectAndNext("("); // skip (
-        stmt.from = nextExpr();
-        expectAndNext(";"); // skip ;
-        stmt.length = nextExpr();
-        expectAndNext(";"); // skip ;
-        stmt.variable = mToken.value;
-        expectAndNext(TokenType.IDENTIFIER);
-        expectAndNext(")"); // skip )
-
-        if (at("{"))
-            stmt.body = nextEnclosedStmt();
-        else
-            stmt.body = new Stmt[] { nextStmt(semicolon) };
-
-        return stmt;
-    }
-
     private RetStmt nextRetStmt(boolean semicolon) {
         final var stmt = new RetStmt();
 
         expectAndNext("ret"); // skip "ret"
         stmt.value = nextExpr();
-        if (stmt.value.isConstant())
-            stmt.value = new ConstExpr(stmt.value);
         expectAndNext(";"); // skip ;
 
         return stmt;
@@ -587,17 +537,8 @@ public class Parser {
         expectAndNext("("); // skip (
         stmt.condition = nextExpr();
         expectAndNext(")"); // skip )
-        if (at("{"))
-            stmt.body = nextEnclosedStmt();
-        else
-            stmt.body = new Stmt[] { nextStmt(semicolon) };
 
-        if (stmt.condition.isConstant()) {
-            final var constexpr = new ConstExpr(stmt.condition);
-            if (!constexpr.value.asBoolean())
-                return null;
-            stmt.condition = constexpr;
-        }
+        stmt.body = nextStmt(semicolon);
 
         return stmt;
     }
@@ -615,12 +556,10 @@ public class Parser {
             }
 
             expectAndNext("="); // skip =
+
             stmt.value = nextExpr();
             if (semicolon)
                 expectAndNext(";"); // skip ;
-
-            if (stmt.value.isConstant())
-                stmt.value = new ConstExpr(stmt.value);
 
             return stmt;
         }
@@ -892,6 +831,6 @@ public class Parser {
             }
         }
 
-        throw new IllegalStateException(String.format("unhandled token %s", mToken));
+        throw new CSawException("unhandled token %s", mToken);
     }
 }

@@ -7,8 +7,8 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
-import io.scriptor.csaw.impl.value.NumValue;
-import io.scriptor.csaw.impl.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.NumValue;
+import io.scriptor.csaw.impl.interpreter.value.StrValue;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("img")

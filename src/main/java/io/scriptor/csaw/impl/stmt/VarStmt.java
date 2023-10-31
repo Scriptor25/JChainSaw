@@ -10,6 +10,7 @@ public class VarStmt extends Stmt {
 
     @Override
     public String toString() {
-        return String.format("%s %s%s;", type, name, value != null ? " = " + value.toString() : "");
+        return String.format("%s %s%s", type, name,
+                value != null ? " = " + value.toString() : "");
     }
 }

@@ -10,9 +10,4 @@ public class ConExpr extends Expr {
     public String toString() {
         return String.format("%s ? %s : %s", condition, thenExpr, elseExpr);
     }
-
-    @Override
-    public boolean isConstant() {
-        return condition.isConstant();
-    }
 }

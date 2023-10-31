@@ -43,6 +43,14 @@ $interval (i: interval) {
     ret interval(my.min - delta, my.max + delta);
 }
 
+@(+): interval (ival: interval, displacement: num) {
+    ret interval(ival.min + displacement, ival.max + displacement);
+}
+
+@(+): interval (displacement: num, ival: interval) {
+    ret ival + displacement;
+}
+
 interval empty    = interval( infinity, -infinity);
 interval universe = interval(-infinity,  infinity);
 interval zero_one = interval(0, 1);

@@ -12,9 +12,4 @@ public class ChrExpr extends Expr {
     public String toString() {
         return String.format("'%c'", value);
     }
-
-    @Override
-    public boolean isConstant() {
-        return true;
-    }
 }

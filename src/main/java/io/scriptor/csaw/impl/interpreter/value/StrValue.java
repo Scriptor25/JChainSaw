@@ -1,4 +1,6 @@
-package io.scriptor.csaw.impl.value;
+package io.scriptor.csaw.impl.interpreter.value;
+
+import static io.scriptor.csaw.impl.Types.TYPE_STR;
 
 public class StrValue extends Value {
 
@@ -18,7 +20,7 @@ public class StrValue extends Value {
 
     @Override
     public String getType() {
-        return Value.TYPE_STR;
+        return TYPE_STR;
     }
 
     @Override

@@ -10,7 +10,7 @@ public class FunStmt extends Stmt {
     public Parameter[] parameters;
     public boolean vararg;
     public String member;
-    public Stmt[] body;
+    public EnclosedStmt body;
 
     @Override
     public String toString() {
@@ -21,12 +21,7 @@ public class FunStmt extends Stmt {
             paramBuilder.append(parameters[i]);
         }
 
-        final var bodyBuilder = new StringBuilder().append("{\n");
-        for (final var stmt : body)
-            bodyBuilder.append("\t").append(stmt).append("\n");
-        bodyBuilder.append("}");
-
         return String.format("%s%s: %s (%s)%s%s %s", constructor ? "$" : "@", name, type, paramBuilder,
-                vararg ? " $" : "", member != null ? " -> " + member : "", bodyBuilder);
+                vararg ? " $" : "", member != null ? " -> " + member : "", body);
     }
 }

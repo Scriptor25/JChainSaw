@@ -1,4 +1,6 @@
-package io.scriptor.csaw.impl.value;
+package io.scriptor.csaw.impl.interpreter.value;
+
+import static io.scriptor.csaw.impl.Types.TYPE_CHR;
 
 public class ChrValue extends Value {
 
@@ -15,7 +17,7 @@ public class ChrValue extends Value {
 
     @Override
     public String getType() {
-        return Value.TYPE_CHR;
+        return TYPE_CHR;
     }
 
     @Override

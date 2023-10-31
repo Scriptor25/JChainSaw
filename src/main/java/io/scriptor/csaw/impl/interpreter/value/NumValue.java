@@ -1,4 +1,6 @@
-package io.scriptor.csaw.impl.value;
+package io.scriptor.csaw.impl.interpreter.value;
+
+import static io.scriptor.csaw.impl.Types.TYPE_NUM;
 
 public class NumValue extends Value {
 
@@ -22,7 +24,7 @@ public class NumValue extends Value {
 
     @Override
     public String getType() {
-        return Value.TYPE_NUM;
+        return TYPE_NUM;
     }
 
     @Override

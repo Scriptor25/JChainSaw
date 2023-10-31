@@ -1,4 +1,4 @@
-package io.scriptor.csaw.impl.value;
+package io.scriptor.csaw.impl.interpreter.value;
 
 public class NativeValue extends Value {
 
