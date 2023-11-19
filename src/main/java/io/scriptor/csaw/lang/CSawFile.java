@@ -1,7 +1,7 @@
 package io.scriptor.csaw.lang;
 
-import static io.scriptor.java.ErrorUtil.tryCatch;
-import static io.scriptor.java.ErrorUtil.tryCatchVoid;
+import static io.scriptor.java.ErrorUtil.handle;
+import static io.scriptor.java.ErrorUtil.handleVoid;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -19,23 +19,23 @@ public class CSawFile {
     private final BufferedWriter mWriter;
 
     public CSawFile(StrValue path) {
-        mReader = new BufferedReader(tryCatch(() -> new FileReader(path.getValue())));
-        mWriter = new BufferedWriter(tryCatch(() -> new FileWriter(path.getValue(), false)));
+        mReader = new BufferedReader(handle(() -> new FileReader(path.getValue())));
+        mWriter = new BufferedWriter(handle(() -> new FileWriter(path.getValue(), false)));
     }
 
     public void out(StrValue fmt, Value... args) {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getValue();
-        tryCatchVoid(() -> mWriter.append(String.format(fmt.getValue(), objArgs)));
+        handleVoid(() -> mWriter.append(String.format(fmt.getValue(), objArgs)));
     }
 
     public StrValue in() {
-        return new StrValue(tryCatch(mReader::readLine));
+        return new StrValue(handle(mReader::readLine));
     }
 
     public void close() {
-        tryCatchVoid(mReader::close);
-        tryCatchVoid(mWriter::close);
+        handleVoid(mReader::close);
+        handleVoid(mWriter::close);
     }
 }

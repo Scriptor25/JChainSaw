@@ -5,18 +5,16 @@ import io.scriptor.csaw.impl.CSawException;
 public class ErrorUtil {
 
     @FunctionalInterface
-    public static interface ICatchIt<T, E extends Throwable> {
-
-        T run() throws E;
+    public static interface ICatchable<T> {
+        T run() throws Throwable;
     }
 
     @FunctionalInterface
-    public static interface ICatchVoid<E extends Throwable> {
-
-        void run() throws E;
+    public static interface ICatchableVoid {
+        void run() throws Throwable;
     }
 
-    public static <T, E extends Throwable> T tryCatch(ICatchIt<T, E> catchIt) {
+    public static <T> T handle(ICatchable<T> catchIt) {
         try {
             return catchIt.run();
         } catch (Throwable e) {
@@ -24,7 +22,7 @@ public class ErrorUtil {
         }
     }
 
-    public static <E extends Throwable> void tryCatchVoid(ICatchVoid<E> catchVoid) {
+    public static void handleVoid(ICatchableVoid catchVoid) {
         try {
             catchVoid.run();
         } catch (Throwable e) {

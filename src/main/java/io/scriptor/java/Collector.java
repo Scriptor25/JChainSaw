@@ -9,7 +9,7 @@ import static io.scriptor.csaw.impl.interpreter.Environment.createType;
 import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
 import static io.scriptor.csaw.impl.interpreter.Environment.hasAlias;
 import static io.scriptor.csaw.impl.interpreter.Environment.registerFunction;
-import static io.scriptor.java.ErrorUtil.tryCatch;
+import static io.scriptor.java.ErrorUtil.handle;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -62,7 +62,7 @@ public class Collector {
                         params[i] = getType(env, cnstr.getParameterTypes()[i]);
 
                     final IFunBody body = (member, args) -> {
-                        return tryCatch(() -> new NativeValue(cnstr.newInstance((Object[]) args)));
+                        return handle(() -> new NativeValue(cnstr.newInstance((Object[]) args)));
                     };
 
                     registerFunction(
@@ -87,7 +87,7 @@ public class Collector {
                     final IFunBody body = (member, args) -> {
                         final var object = member != null ? member.getValue() : null;
 
-                        return Value.class.cast(tryCatch(() -> mthd.invoke(
+                        return Value.class.cast(handle(() -> mthd.invoke(
                                 object,
                                 mthd.isVarArgs()
                                         ? prepareArgs(mthd.getParameterCount(), args)
