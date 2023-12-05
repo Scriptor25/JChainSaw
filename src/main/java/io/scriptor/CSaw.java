@@ -66,7 +66,7 @@ public class CSaw {
         final var env = Environment.initGlobal(file.getParent());
         Collector.collect(env);
 
-        Parser.parse(ErrorUtil.tryCatch(() -> new FileInputStream(file)), env);
+        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env);
 
         System.out.printf("Exit Code %s%n", getAndInvoke(null, "main"));
     }

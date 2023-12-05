@@ -1,7 +1,7 @@
 package io.scriptor.csaw.impl;
 
-import static io.scriptor.java.ErrorUtil.tryCatch;
-import static io.scriptor.java.ErrorUtil.tryCatchVoid;
+import static io.scriptor.java.ErrorUtil.handle;
+import static io.scriptor.java.ErrorUtil.handleVoid;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -88,15 +88,15 @@ public class Parser {
     }
 
     private int reader_read() {
-        return tryCatch(mReader::read);
+        return handle(mReader::read);
     }
 
     private void reader_mark(int readAheadLimit) {
-        tryCatchVoid(() -> mReader.mark(readAheadLimit));
+        handleVoid(() -> mReader.mark(readAheadLimit));
     }
 
     private void reader_reset() {
-        tryCatchVoid(mReader::reset);
+        handleVoid(mReader::reset);
     }
 
     private Token next() {

@@ -1,7 +1,7 @@
 package io.scriptor.csaw.lang;
 
-import static io.scriptor.java.ErrorUtil.tryCatch;
-import static io.scriptor.java.ErrorUtil.tryCatchVoid;
+import static io.scriptor.java.ErrorUtil.handle;
+import static io.scriptor.java.ErrorUtil.handleVoid;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;

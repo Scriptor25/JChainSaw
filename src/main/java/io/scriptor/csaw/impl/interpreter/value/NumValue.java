@@ -18,6 +18,11 @@ public class NumValue extends Value {
         mValue = value ? 1 : 0;
     }
 
+    public int asInt() {
+        return (int) mValue;
+    }
+
+    @Override
     public Double getValue() {
         return mValue;
     }

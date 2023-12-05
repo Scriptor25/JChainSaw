@@ -130,7 +130,7 @@ public class Interpreter {
     public static Value evaluate(Environment env, IncStmt stmt) {
         final var path = env.getPath();
         final var file = new File(path, stmt.path);
-        Parser.parse(ErrorUtil.tryCatch(() -> new FileInputStream(file)), env.setPath(file.getParent()));
+        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env.setPath(file.getParent()));
         env.setPath(path);
 
         return null;

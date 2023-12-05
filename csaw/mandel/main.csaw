@@ -6,7 +6,7 @@ str SYMBOLS = SYMBOLS_HIGH;
 
 num MAX_ITER = 100;
 num SAMPLES = 10;
-num WIDTH = 128;
+num WIDTH = 512;
 num HEIGHT = WIDTH;
 
 @main: num {

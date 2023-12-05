@@ -1,6 +1,6 @@
 package io.scriptor.csaw.lang;
 
-import static io.scriptor.java.ErrorUtil.tryCatch;
+import static io.scriptor.java.ErrorUtil.handle;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -17,7 +17,11 @@ public class CSawImg {
     private final BufferedImage mData;
 
     public CSawImg(StrValue filepath) {
-        mData = tryCatch(() -> ImageIO.read(new File(filepath.getValue())));
+        mData = handle(() -> ImageIO.read(new File(filepath.getValue())));
+    }
+
+    public CSawImg(NumValue width, NumValue height) {
+        mData = new BufferedImage(width.asInt(), height.asInt(), BufferedImage.TYPE_INT_ARGB);
     }
 
     private boolean noData() {
@@ -33,7 +37,7 @@ public class CSawImg {
     }
 
     private int getRGB(NumValue x, NumValue y) {
-        return mData.getRGB((int) (double) x.getValue(), (int) (double) y.getValue());
+        return mData.getRGB(x.asInt(), y.asInt());
     }
 
     public NumValue getPixel(NumValue x, NumValue y) {
@@ -50,5 +54,13 @@ public class CSawImg {
 
     public NumValue getBlue(NumValue x, NumValue y) {
         return new NumValue(getRGB(x, y) & 0xff);
+    }
+
+    public void setPixel(NumValue x, NumValue y, NumValue rgb) {
+        mData.setRGB(x.asInt(), y.asInt(), rgb.asInt());
+    }
+
+    public NumValue write(StrValue format, StrValue file) {
+        return new NumValue(handle(() -> ImageIO.write(mData, format.getValue(), new File(file.getValue()))));
     }
 }
