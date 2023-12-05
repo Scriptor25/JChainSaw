@@ -11,18 +11,18 @@ num HEIGHT = WIDTH;
 
 @main: num {
 
-#
     num xc = num(in("xc: "));
     num yc = num(in("yc: "));
     num size = num(in("size: "));
-#
 
+#
     num xc = -0.5;
     num yc = 0;
     num size = 2;
+#
 
-    file f = file("C:\\Users\\Felix Schreiber\\Documents\\GitHub\\csaw\\out.ppm");
-    f.out("P3%n%.0f %.0f%n255%n", WIDTH, HEIGHT);
+    ofstream output = ofstream("out.ppm");
+    output.write("P3%n%.0f %.0f%n255%n", WIDTH, HEIGHT);
 
     for (num j = 0; j < HEIGHT; j++) {
         for (num i = 0; i < WIDTH; i++) {
@@ -36,12 +36,12 @@ num HEIGHT = WIDTH;
             n = n / (SAMPLES * MAX_ITER);
             ## out("%c", symbol(n));
             num grey = floor(n * 255.999);
-            f.out("%.0f %.0f %.0f%n", grey, grey, grey);
+            output.write("%.0f %.0f %.0f%n", grey, grey, grey);
         }
         ## out("%n");
     }
     
-    f.close();
+    output.close();
 
     ret 0;
 }

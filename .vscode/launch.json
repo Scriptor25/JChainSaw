@@ -17,7 +17,9 @@
             "request": "launch",
             "mainClass": "io.scriptor.CSaw",
             "projectName": "csaw",
-            "args": ["csaw/mandel/main.csaw"]
+            "args": [
+                "csaw/mandel/main.csaw"
+            ]
         },
         {
             "type": "java",
@@ -25,7 +27,9 @@
             "request": "launch",
             "mainClass": "io.scriptor.CSaw",
             "projectName": "csaw",
-            "args": ["csaw/ghost/main.csaw"]
+            "args": [
+                "csaw/ghost/main.csaw"
+            ]
         },
         {
             "type": "java",
@@ -33,7 +37,19 @@
             "request": "launch",
             "mainClass": "io.scriptor.CSaw",
             "projectName": "csaw",
-            "args": ["csaw/rtx/main.csaw"]
+            "args": [
+                "csaw/rtx/main.csaw"
+            ]
+        },
+        {
+            "type": "java",
+            "name": "AOC23 - Day 3",
+            "request": "launch",
+            "mainClass": "io.scriptor.CSaw",
+            "projectName": "csaw",
+            "args": [
+                "csaw/aoc23/src/day3.csaw"
+            ]
         }
     ]
 }

@@ -4,7 +4,7 @@ $color (r: num, g: num, b: num) { my = vec3(r, g, b); }
 
 interval intensity = interval(0.000, 0.999);
 
-@write_color (output: file, pixel_color: color, samples_per_pixel: num) {
+@write_color (output: ofstream, pixel_color: color, samples_per_pixel: num) {
     num r = pixel_color.x();
     num g = pixel_color.y();
     num b = pixel_color.z();
@@ -21,7 +21,7 @@ interval intensity = interval(0.000, 0.999);
     b = linear_to_gamma(b);
 
     ## Write the translated [0,255] value of each color component.
-    output.out(
+    output.write(
         "%.0f %.0f %.0f%n", 
         floor(256 * intensity.clamp(r)),
         floor(256 * intensity.clamp(g)),
