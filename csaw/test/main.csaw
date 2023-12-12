@@ -1,0 +1,25 @@
+@main: num {
+
+    list threads;
+    num n = 11;
+
+    for (num i = 0; i < n; i++)
+        threads.add(thrd([i]() out("Hello from thread %d!%n", i)));
+    
+    for (num i = 0; i < n; i++)
+        threads[i].start();
+
+    for (num i = 0; i < n; i++)
+        threads[i].join();
+
+    out(" = %s%n", exec([](a: num, b: num, c: num) {
+        out("%s + %s + %s", a, b, c);
+        ret a + b + c;
+    }, 1, 2, 3));
+
+    ret 0;
+}
+
+@exec: any (l: lambda) $args {
+    ret l(args);
+}

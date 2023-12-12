@@ -16,6 +16,7 @@ import io.scriptor.csaw.impl.expr.ChrExpr;
 import io.scriptor.csaw.impl.expr.ConExpr;
 import io.scriptor.csaw.impl.expr.Expr;
 import io.scriptor.csaw.impl.expr.IdExpr;
+import io.scriptor.csaw.impl.expr.LambdaExpr;
 import io.scriptor.csaw.impl.expr.MemExpr;
 import io.scriptor.csaw.impl.expr.NumExpr;
 import io.scriptor.csaw.impl.expr.StrExpr;
@@ -320,7 +321,7 @@ public class Parser {
         if (stmt != null)
             return stmt;
 
-        if (semicolon)
+        if (!eof() && semicolon)
             expectAndNext(";"); // skip ;
 
         return expr;
@@ -349,7 +350,7 @@ public class Parser {
         expectAndNext(":"); // skip :
         stmt.origin = mToken.value;
         expectAndNext(TokenType.IDENTIFIER); // skip origin
-        if (semicolon)
+        if (!eof() && semicolon)
             expectAndNext(";"); // skip ;
 
         return stmt;
@@ -470,7 +471,8 @@ public class Parser {
         expectAndNext("inc"); // skip "inc"
         stmt.path = mToken.value;
         expectAndNext(TokenType.STRING); // skip path
-        expectAndNext(";"); // skip ;
+        if (!eof() && semicolon)
+            expectAndNext(";"); // skip ;
 
         return stmt;
     }
@@ -480,7 +482,8 @@ public class Parser {
 
         expectAndNext("ret"); // skip "ret"
         stmt.value = nextExpr();
-        expectAndNext(";"); // skip ;
+        if (!eof() && semicolon)
+            expectAndNext(";"); // skip ;
 
         return stmt;
     }
@@ -551,7 +554,7 @@ public class Parser {
             expectAndNext("="); // skip =
 
             stmt.value = nextExpr();
-            if (semicolon)
+            if (!eof() && semicolon)
                 expectAndNext(";"); // skip ;
 
             return stmt;
@@ -713,6 +716,12 @@ public class Parser {
             final var index = nextExpr();
             expectAndNext("]"); // skip ]
             expr = new BinExpr(expr, index, "[]");
+
+            if (at("."))
+                expr = nextMemExpr(expr);
+
+            if (at("("))
+                expr = nextCallExpr(expr);
         }
 
         return expr;
@@ -724,8 +733,8 @@ public class Parser {
 
     private Expr nextCallExpr(Expr expr) {
         while (at("(")) {
-            final List<Expr> arguments = new Vector<>();
             next(); // skip (
+            final List<Expr> arguments = new Vector<>();
             while (!eof() && !at(")")) {
                 arguments.add(nextExpr());
                 if (!at(")"))
@@ -802,6 +811,35 @@ public class Parser {
             case "~": {
                 next(); // skip ~
                 return new UnExpr("~", nextBinIndexExpr());
+            }
+
+            case "[": { // lambda!
+                next(); // skip [
+                final List<IdExpr> passed = new Vector<>();
+                while (!eof() && !at("]")) {
+                    passed.add((IdExpr) nextPrimExpr());
+                    if (!at("]"))
+                        expectAndNext(","); // skip ,
+                }
+                expectAndNext("]"); // skip ]
+
+                expectAndNext("("); // skip (
+                final List<Parameter> parameters = new Vector<>();
+                while (!eof() && !at(")")) {
+                    final var param = new Parameter();
+                    param.name = mToken.value;
+                    expectAndNext(TokenType.IDENTIFIER); // skip name
+                    expectAndNext(":"); // skip :
+                    param.type = mToken.value;
+                    expectAndNext(TokenType.IDENTIFIER); // skip type
+                    parameters.add(param);
+                    if (!at(")"))
+                        expectAndNext(","); // skip ,
+                }
+                expectAndNext(")"); // skip )
+
+                final var body = nextStmt(false);
+                return new LambdaExpr(passed.toArray(new IdExpr[0]), parameters.toArray(new Parameter[0]), body);
             }
         }
 

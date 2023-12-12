@@ -1,7 +1,0 @@
-@main: num (argc: num) $argv {
-
-    for (num i = 0; i < argc; i++)
-        out("#%d: %s%n", i, argv[i]);
-
-    ret 0;
-}

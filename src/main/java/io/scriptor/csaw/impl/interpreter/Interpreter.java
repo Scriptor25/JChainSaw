@@ -3,14 +3,17 @@ package io.scriptor.csaw.impl.interpreter;
 import static io.scriptor.csaw.impl.interpreter.Environment.createAlias;
 import static io.scriptor.csaw.impl.interpreter.Environment.createFunction;
 import static io.scriptor.csaw.impl.interpreter.Environment.createType;
-import static io.scriptor.csaw.impl.interpreter.Environment.getFunction;
+import static io.scriptor.csaw.impl.interpreter.Environment.getAndInvoke;
 import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
+import static io.scriptor.csaw.impl.interpreter.Environment.hasFunction;
 import static io.scriptor.csaw.impl.interpreter.Environment.isAssignable;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Arrays;
 
 import io.scriptor.csaw.impl.CSawException;
+import io.scriptor.csaw.impl.Pair;
 import io.scriptor.csaw.impl.Parser;
 import io.scriptor.csaw.impl.expr.AssignExpr;
 import io.scriptor.csaw.impl.expr.BinExpr;
@@ -19,11 +22,13 @@ import io.scriptor.csaw.impl.expr.ChrExpr;
 import io.scriptor.csaw.impl.expr.ConExpr;
 import io.scriptor.csaw.impl.expr.Expr;
 import io.scriptor.csaw.impl.expr.IdExpr;
+import io.scriptor.csaw.impl.expr.LambdaExpr;
 import io.scriptor.csaw.impl.expr.MemExpr;
 import io.scriptor.csaw.impl.expr.NumExpr;
 import io.scriptor.csaw.impl.expr.StrExpr;
 import io.scriptor.csaw.impl.expr.UnExpr;
 import io.scriptor.csaw.impl.interpreter.value.ChrValue;
+import io.scriptor.csaw.impl.interpreter.value.LambdaValue;
 import io.scriptor.csaw.impl.interpreter.value.NumValue;
 import io.scriptor.csaw.impl.interpreter.value.ObjValue;
 import io.scriptor.csaw.impl.interpreter.value.StrValue;
@@ -182,6 +187,8 @@ public class Interpreter {
             return evaluate(env, (ConExpr) expr);
         if (expr instanceof IdExpr)
             return evaluate(env, (IdExpr) expr);
+        if (expr instanceof LambdaExpr)
+            return evaluate(env, (LambdaExpr) expr);
         if (expr instanceof MemExpr)
             return evaluate(env, (MemExpr) expr);
         if (expr instanceof NumExpr)
@@ -255,8 +262,22 @@ public class Interpreter {
             name = ((MemExpr) expr.function).member;
         }
 
-        final var fun = getFunction(member != null ? getOrigin(member.getType()) : null, name, argTypes);
-        return fun.invoke(member, args);
+        final var mem = member != null ? getOrigin(member.getType()) : null;
+
+        if (hasFunction(mem, name, argTypes))
+            return getAndInvoke(member, name, args);
+
+        if (env.hasVariable(name)) {
+            final var lambda = env.getVariable(name);
+            if (lambda.isLambda())
+                return lambda.asLambda().invoke(args);
+        }
+
+        throw new CSawException(
+                "undefined call to '%s', member of '%s', arguments %s",
+                name,
+                member,
+                Arrays.toString(args));
     }
 
     public static Value evaluate(Environment env, ChrExpr expr) {
@@ -271,6 +292,13 @@ public class Interpreter {
 
     public static Value evaluate(Environment env, IdExpr expr) {
         return env.getVariable(expr.value);
+    }
+
+    public static Value evaluate(Environment env, LambdaExpr expr) {
+        final var passed = Arrays.stream(expr.passed)
+                .map(e -> new Pair<>(e.value, evaluate(env, e)))
+                .toArray(n -> new Pair[n]);
+        return new LambdaValue(passed, expr.parameters, expr.body);
     }
 
     public static Value evaluate(Environment env, MemExpr expr) {

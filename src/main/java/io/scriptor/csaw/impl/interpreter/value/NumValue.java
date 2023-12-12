@@ -31,18 +31,25 @@ public class NumValue extends Value {
     }
 
     @Override
-    public Number getValue() {
-        return mValue == Math.floor(mValue) ? (long) mValue : mValue;
+    protected Number value() {
+        if (mValue == (long) mValue)
+            return (long) mValue;
+        return mValue;
     }
 
     @Override
-    public String getType() {
+    protected String type() {
         return TYPE_NUM;
     }
 
     @Override
-    public boolean asBoolean() {
+    protected boolean bool() {
         return mValue != 0;
+    }
+
+    @Override
+    protected String string() {
+        return mValue == Math.floor(mValue) ? Long.toString((long) mValue) : Double.toString(mValue);
     }
 
     @Override
@@ -54,11 +61,6 @@ public class NumValue extends Value {
         if (!(other instanceof NumValue))
             return false;
         return mValue == ((NumValue) other).mValue;
-    }
-
-    @Override
-    public String toString() {
-        return mValue == Math.floor(mValue) ? Long.toString((long) mValue) : Double.toString(mValue);
     }
 
 }

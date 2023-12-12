@@ -27,22 +27,22 @@ public class ObjValue extends Value {
     }
 
     @Override
-    public Object getValue() {
+    protected Map<String, Pair<String, Value>> value() {
         return mFields;
     }
 
     @Override
-    public String getType() {
+    protected String type() {
         return mType;
     }
 
     @Override
-    public boolean asBoolean() {
+    protected boolean bool() {
         return true;
     }
 
     @Override
-    public String toString() {
+    protected String string() {
         return String.format("%s %s", mType, mFields);
     }
 

@@ -22,7 +22,7 @@ interval intensity = interval(0.000, 0.999);
 
     ## Write the translated [0,255] value of each color component.
     output.write(
-        "%.0f %.0f %.0f%n", 
+        "%d %d %d%n", 
         floor(256 * intensity.clamp(r)),
         floor(256 * intensity.clamp(g)),
         floor(256 * intensity.clamp(b))

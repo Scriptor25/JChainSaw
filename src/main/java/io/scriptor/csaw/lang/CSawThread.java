@@ -2,17 +2,17 @@ package io.scriptor.csaw.lang;
 
 import static io.scriptor.java.ErrorUtil.handleVoid;
 
-import io.scriptor.csaw.impl.interpreter.Environment;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.LambdaValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("thrd")
-public class CSawThread {
+public class CSawThread extends Value {
 
     private final Thread mThread;
 
-    public CSawThread(StrValue function) {
-        mThread = new Thread(() -> Environment.getAndInvoke(null, function.getValue()), "CSawThread");
+    public CSawThread(LambdaValue function) {
+        mThread = new Thread(() -> function.invoke(), "CSawThread");
     }
 
     public void start() {
@@ -25,6 +25,26 @@ public class CSawThread {
 
     public void stop() {
         mThread.interrupt();
+    }
+
+    @Override
+    protected Thread value() {
+        return mThread;
+    }
+
+    @Override
+    protected String type() {
+        return "thrd";
+    }
+
+    @Override
+    protected boolean bool() {
+        return mThread.isAlive();
+    }
+
+    @Override
+    protected String string() {
+        return mThread.toString();
     }
 
 }

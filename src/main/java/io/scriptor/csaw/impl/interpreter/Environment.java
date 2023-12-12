@@ -44,14 +44,16 @@ public class Environment {
         if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
             final var functions = FUNCTIONS.get(member).get(name);
             for (final var fun : functions) {
-                if (fun.parameters.length != types.length) // wrong params number
+                if (fun.vararg == null && fun.parameters.length != types.length) // wrong params number
+                    continue;
+                if (fun.vararg != null && fun.parameters.length > types.length) // vararg but not enough params
                     continue;
 
                 int i = 0;
                 for (; i < fun.parameters.length; i++)
                     if (!isAssignable(types[i], fun.parameters[i]))
                         break;
-                if (i == fun.parameters.length)
+                if (i == fun.parameters.length || (fun.vararg != null && i < types.length))
                     return true;
             }
         }

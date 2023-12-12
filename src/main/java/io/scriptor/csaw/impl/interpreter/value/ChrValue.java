@@ -19,22 +19,22 @@ public class ChrValue extends Value {
     }
 
     @Override
-    public Character getValue() {
+    public Character value() {
         return mValue;
     }
 
     @Override
-    public String getType() {
+    public String type() {
         return TYPE_CHR;
     }
 
     @Override
-    public boolean asBoolean() {
+    public boolean bool() {
         return mValue > 0;
     }
 
     @Override
-    public String toString() {
+    public String string() {
         return Character.toString(mValue);
     }
 

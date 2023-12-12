@@ -43,12 +43,12 @@
         },
         {
             "type": "java",
-            "name": "AOC23 - Day 3",
+            "name": "CSaw Test",
             "request": "launch",
             "mainClass": "io.scriptor.CSaw",
             "projectName": "csaw",
             "args": [
-                "csaw/aoc23/src/day3.csaw"
+                "csaw/test/main.csaw"
             ]
         }
     ]
