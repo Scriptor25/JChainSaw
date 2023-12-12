@@ -20,47 +20,47 @@ public class CSawStd {
     }
 
     public static NumValue floor(NumValue x) {
-        return new NumValue(Math.floor(x.getValue()));
+        return new NumValue(Math.floor(x.get()));
     }
 
     public static NumValue abs(NumValue x) {
-        return new NumValue(Math.abs(x.getValue()));
+        return new NumValue(Math.abs(x.get()));
     }
 
     public static NumValue sin(NumValue x) {
-        return new NumValue(Math.sin(x.getValue()));
+        return new NumValue(Math.sin(x.get()));
     }
 
     public static NumValue cos(NumValue x) {
-        return new NumValue(Math.cos(x.getValue()));
+        return new NumValue(Math.cos(x.get()));
     }
 
     public static NumValue tan(NumValue x) {
-        return new NumValue(Math.tan(x.getValue()));
+        return new NumValue(Math.tan(x.get()));
     }
 
     public static NumValue asin(NumValue x) {
-        return new NumValue(Math.asin(x.getValue()));
+        return new NumValue(Math.asin(x.get()));
     }
 
     public static NumValue acos(NumValue x) {
-        return new NumValue(Math.acos(x.getValue()));
+        return new NumValue(Math.acos(x.get()));
     }
 
     public static NumValue atan(NumValue x) {
-        return new NumValue(Math.atan(x.getValue()));
+        return new NumValue(Math.atan(x.get()));
     }
 
     public static NumValue atan2(NumValue y, NumValue x) {
-        return new NumValue(Math.atan2(y.getValue(), x.getValue()));
+        return new NumValue(Math.atan2(y.get(), x.get()));
     }
 
     public static NumValue sqrt(NumValue x) {
-        return new NumValue(Math.sqrt(x.getValue()));
+        return new NumValue(Math.sqrt(x.get()));
     }
 
     public static NumValue pow(NumValue x, NumValue y) {
-        return new NumValue(Math.pow(x.getValue(), y.getValue()));
+        return new NumValue(Math.pow(x.get(), y.get()));
     }
 
     public static void out(StrValue fmt, Value... args) {

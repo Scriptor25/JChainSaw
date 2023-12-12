@@ -4,7 +4,7 @@ import static io.scriptor.csaw.impl.Types.TYPE_STR;
 
 public class StrValue extends Value {
 
-    private String mValue;
+    private final String mValue;
 
     public StrValue() {
         mValue = "";

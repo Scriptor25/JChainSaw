@@ -2,8 +2,13 @@ package io.scriptor.csaw.impl.expr;
 
 public class MemExpr extends Expr {
 
-    public Expr object;
-    public String member;
+    public final Expr object;
+    public final String member;
+
+    public MemExpr(Expr object, String member) {
+        this.object = object;
+        this.member = member;
+    }
 
     @Override
     public String toString() {

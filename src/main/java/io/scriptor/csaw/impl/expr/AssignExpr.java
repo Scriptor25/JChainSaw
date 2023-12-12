@@ -2,8 +2,8 @@ package io.scriptor.csaw.impl.expr;
 
 public class AssignExpr extends Expr {
 
-    public Expr object;
-    public Expr value;
+    public final Expr object;
+    public final Expr value;
 
     public AssignExpr(Expr object, Expr value) {
         this.object = object;

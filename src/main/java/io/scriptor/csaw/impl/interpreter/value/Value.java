@@ -31,8 +31,44 @@ public abstract class Value {
         return this instanceof StrValue;
     }
 
+    public boolean isChr() {
+        return this instanceof ChrValue;
+    }
+
+    public boolean isObj() {
+        return this instanceof ObjValue;
+    }
+
+    public boolean isNative() {
+        return this instanceof NativeValue;
+    }
+
+    public boolean isNull() {
+        return this instanceof NullValue;
+    }
+
     public boolean sameType(Value value) {
         return getClass().isInstance(value);
+    }
+
+    public NumValue asNum() {
+        return (NumValue) this;
+    }
+
+    public StrValue asStr() {
+        return (StrValue) this;
+    }
+
+    public ChrValue asChr() {
+        return (ChrValue) this;
+    }
+
+    public ObjValue asObj() {
+        return (ObjValue) this;
+    }
+
+    public NativeValue asNative() {
+        return (NativeValue) this;
     }
 
     public abstract Object getValue();
@@ -46,11 +82,11 @@ public abstract class Value {
     public static Value makeValue(Environment env, String type, boolean primitives, boolean dontConstruct) {
         switch (getOrigin(type)) {
             case TYPE_NUM:
-                return new NumValue(0);
+                return new NumValue();
             case TYPE_STR:
                 return new StrValue();
             case TYPE_CHR:
-                return new ChrValue((char) 0);
+                return new ChrValue();
             default:
                 break;
         }
@@ -66,8 +102,7 @@ public abstract class Value {
 
     public static Value binAnd(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(
-                    (int) (double) ((NumValue) left).getValue() & (int) (double) ((NumValue) right).getValue());
+            return new NumValue(left.asNum().getInt() & right.asNum().getInt());
 
         return getAndInvoke(null, "&", left, right);
     }
@@ -77,6 +112,9 @@ public abstract class Value {
     }
 
     public static Value binOr(Environment env, Value left, Value right) {
+        if (left.isNum() && right.isNum())
+            return new NumValue(left.asNum().getInt() | right.asNum().getInt());
+
         return getAndInvoke(null, "|", left, right);
     }
 
@@ -94,35 +132,35 @@ public abstract class Value {
 
     public static Value cmpl(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() < ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() < right.asNum().get());
 
         return getAndInvoke(null, "<", left, right);
     }
 
     public static Value cmple(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() <= ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() <= right.asNum().get());
 
         return getAndInvoke(null, "<=", left, right);
     }
 
     public static Value cmpg(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() > ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() > right.asNum().get());
 
         return getAndInvoke(null, ">", left, right);
     }
 
     public static Value cmpge(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() >= ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() >= right.asNum().get());
 
         return getAndInvoke(null, ">=", left, right);
     }
 
     public static Value add(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() + ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() + right.asNum().get());
 
         if (left.isStr())
             return new StrValue(((StrValue) left).getValue() + right.toString());
@@ -135,28 +173,28 @@ public abstract class Value {
 
     public static Value sub(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() - ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() - right.asNum().get());
 
         return getAndInvoke(null, "-", left, right);
     }
 
     public static Value mul(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() * ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() * right.asNum().get());
 
         return getAndInvoke(null, "*", left, right);
     }
 
     public static Value div(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() / ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() / right.asNum().get());
 
         return getAndInvoke(null, "/", left, right);
     }
 
     public static Value mod(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(((NumValue) left).getValue() % ((NumValue) right).getValue());
+            return new NumValue(left.asNum().get() % right.asNum().get());
 
         return getAndInvoke(null, "%", left, right);
     }
@@ -164,14 +202,18 @@ public abstract class Value {
     public static Value xor(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new NumValue(
-                    (int) (double) ((NumValue) left).getValue() ^ (int) (double) ((NumValue) right).getValue());
+                    (int) (double) left.asNum().getValue() ^ (int) (double) right.asNum().getValue());
 
         return getAndInvoke(null, "^", left, right);
     }
 
+    public static Value index(Environment env, Value left, Value right) {
+        return getAndInvoke(null, "[]", left, right);
+    }
+
     public static Value neg(Environment env, Value value) {
         if (value.isNum())
-            return new NumValue(-((NumValue) value).getValue());
+            return new NumValue(-value.asNum().get());
 
         return getAndInvoke(value, "-");
     }
@@ -182,7 +224,7 @@ public abstract class Value {
 
     public static Value inv(Environment env, Value value) {
         if (value.isNum())
-            return new NumValue(~(int) (double) ((NumValue) value).getValue());
+            return new NumValue(~value.asNum().getInt());
 
         return getAndInvoke(value, "~");
     }

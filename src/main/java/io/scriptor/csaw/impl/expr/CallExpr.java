@@ -2,8 +2,13 @@ package io.scriptor.csaw.impl.expr;
 
 public class CallExpr extends Expr {
 
-    public Expr function;
-    public Expr[] arguments;
+    public final Expr function;
+    public final Expr[] arguments;
+
+    public CallExpr(Expr function, Expr[] arguments) {
+        this.function = function;
+        this.arguments = arguments;
+    }
 
     @Override
     public String toString() {

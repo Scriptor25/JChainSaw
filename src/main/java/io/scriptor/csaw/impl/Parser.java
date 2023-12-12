@@ -49,6 +49,11 @@ public class Parser {
 
         public String value;
         public TokenType type;
+        public final long line;
+
+        public Token(long line) {
+            this.line = line;
+        }
 
         public Token value(String value) {
             this.value = value;
@@ -60,13 +65,13 @@ public class Parser {
             return this;
         }
 
-        public static Token EOF() {
-            return new Token().type(TokenType.EOF);
+        public static Token EOF(long line) {
+            return new Token(line).type(TokenType.EOF);
         }
 
         @Override
         public String toString() {
-            return String.format("[ '%s' -> %s ]", value, type);
+            return String.format("[ '%s' -> %s (%d) ]", value, type, line);
         }
     }
 
@@ -82,37 +87,42 @@ public class Parser {
 
     private final BufferedReader mReader;
     private Token mToken;
+    private long mLine = 1;
 
     private Parser(InputStream stream) {
         mReader = new BufferedReader(new InputStreamReader(stream));
     }
 
-    private int reader_read() {
+    private int read() {
         return handle(mReader::read);
     }
 
-    private void reader_mark(int readAheadLimit) {
+    private void mark(int readAheadLimit) {
         handleVoid(() -> mReader.mark(readAheadLimit));
     }
 
-    private void reader_reset() {
+    private void reset() {
         handleVoid(mReader::reset);
     }
 
     private Token next() {
-        int c = reader_read();
+        int c = read();
 
-        while (isIgnorable(c))
-            c = reader_read();
+        while (isIgnorable(c)) {
+            if (c == '\n')
+                mLine++;
+            c = read();
+        }
 
         if (c < 0)
-            return mToken = Token.EOF();
+            return mToken = Token.EOF(mLine);
 
         if (c == '#') {
-            c = reader_read();
+            c = read();
             final char LIMIT = c == '#' ? '\n' : '#';
-            while ((c = reader_read()) != LIMIT && c >= 0)
-                ;
+            while ((c = read()) != LIMIT && c >= 0)
+                if (c == '\n')
+                    mLine++;
             return next();
         }
 
@@ -120,108 +130,107 @@ public class Parser {
             final var builder = new StringBuilder();
             do {
                 builder.append((char) c);
-                reader_mark(1);
-                c = reader_read();
+                mark(1);
+                c = read();
             } while (isAlnum(c) || c == '_');
-            reader_reset();
+            reset();
 
-            return mToken = new Token().type(TokenType.IDENTIFIER).value(builder.toString());
+            return mToken = new Token(mLine).type(TokenType.IDENTIFIER).value(builder.toString());
         }
 
         if (isDigit(c)) {
             final var builder = new StringBuilder();
             do {
                 builder.append((char) c);
-                reader_mark(1);
+                mark(1);
                 int p = c;
-                c = reader_read();
+                c = read();
                 if ((p == 'e' || p == 'E') && c == '-') {
                     builder.append((char) c);
-                    reader_mark(1);
-                    c = reader_read();
+                    mark(1);
+                    c = read();
                 }
             } while (isDigit(c) || c == '.' || c == 'e' || c == 'E');
-            reader_reset();
+            reset();
 
-            return mToken = new Token().type(TokenType.NUMBER).value(builder.toString());
+            return mToken = new Token(mLine).type(TokenType.NUMBER).value(builder.toString());
         }
 
         if (c == '"') {
             final var builder = new StringBuilder();
-            c = reader_read();
+            c = read();
             while (c != '"' && c >= 0) {
                 if (c == '\\') {
-                    c = reader_read();
+                    c = read();
                     switch (c) {
                         case 't':
                             builder.append('\t');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'r':
                             builder.append('\r');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'n':
                             builder.append('\n');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'f':
                             builder.append('\f');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'b':
                             builder.append('\b');
-                            c = reader_read();
+                            c = read();
                             continue;
                     }
                 }
 
                 builder.append((char) c);
-                c = reader_read();
+                c = read();
             }
 
-            return mToken = new Token().type(TokenType.STRING).value(builder.toString());
+            return mToken = new Token(mLine).type(TokenType.STRING).value(builder.toString());
         }
 
         if (c == '\'') {
             final var builder = new StringBuilder();
-            c = reader_read();
+            c = read();
             while (c != '\'' && c >= 0) {
                 if (c == '\\') {
-                    c = reader_read();
+                    c = read();
                     switch (c) {
                         case 't':
                             builder.append('\t');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'r':
                             builder.append('\r');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'n':
                             builder.append('\n');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'f':
                             builder.append('\f');
-                            c = reader_read();
+                            c = read();
                             continue;
                         case 'b':
                             builder.append('\b');
-                            c = reader_read();
+                            c = read();
                             continue;
                     }
                 }
 
                 builder.append((char) c);
-                c = reader_read();
+                c = read();
             }
 
-            return mToken = new Token().type(TokenType.CHAR).value(builder.toString());
+            return mToken = new Token(mLine).type(TokenType.CHAR).value(builder.toString());
         }
 
-        return mToken = new Token().type(TokenType.OPERATOR).value(Character.toString(c));
-
+        return mToken = new Token(mLine).type(TokenType.OPERATOR).value(Character.toString(c));
     }
 
     private static boolean isIgnorable(int c) {
@@ -416,7 +425,8 @@ public class Parser {
 
         if (at("$")) {
             next(); // skip $
-            stmt.vararg = true;
+            stmt.vararg = mToken.value;
+            expectAndNext(TokenType.IDENTIFIER); // skip vararg name
         }
 
         if (at("-")) {
@@ -529,7 +539,7 @@ public class Parser {
     private VarStmt nextVarStmt(Expr type, boolean semicolon) {
         if (type instanceof IdExpr && at(TokenType.IDENTIFIER)) {
             final var stmt = new VarStmt();
-            stmt.type = ((IdExpr) type).name;
+            stmt.type = ((IdExpr) type).value;
             stmt.name = mToken.value;
             expectAndNext(TokenType.IDENTIFIER); // skip name
 
@@ -558,176 +568,162 @@ public class Parser {
         var expr = nextBinExprAnd();
 
         while (at("?")) {
-            final var conExpr = new ConExpr();
-            conExpr.condition = expr;
             next(); // skip ?
-            conExpr.thenExpr = nextExpr();
+            final var thenExpr = nextExpr();
             expectAndNext(":"); // skip :
-            conExpr.elseExpr = nextExpr();
+            final var elseExpr = nextExpr();
 
-            expr = conExpr;
+            expr = new ConExpr(expr, thenExpr, elseExpr);
         }
 
         return expr;
     }
 
     private Expr nextBinExprAnd() {
-        var expr = nextBinExprOr();
+        var left = nextBinExprOr();
 
         while (at("&")) {
-            final var binExpr = new BinExpr();
-            binExpr.left = expr;
-            binExpr.operator = mToken.value;
+            var operator = mToken.value;
 
             next(); // skip operator
             if (at("=")) {
                 next(); // skip =
-                binExpr.right = nextExpr();
-                expr = new AssignExpr(expr, binExpr);
+                left = new AssignExpr(left, new BinExpr(left, nextExpr(), operator));
                 continue;
             } else if (at("&")) {
-                binExpr.operator += mToken.value;
+                operator += mToken.value;
                 next(); // skip operator
             }
 
-            binExpr.right = nextBinExprOr();
-            expr = binExpr;
+            left = new BinExpr(left, nextBinExprOr(), operator);
         }
 
-        return expr;
+        return left;
     }
 
     private Expr nextBinExprOr() {
-        var expr = nextBinExprXOr();
+        var left = nextBinExprXOr();
 
         while (at("|")) {
-            final var binExpr = new BinExpr();
-            binExpr.left = expr;
-            binExpr.operator = mToken.value;
+            var operator = mToken.value;
 
             next(); // skip operator
             if (at("=")) {
                 next(); // skip =
-                binExpr.right = nextExpr();
-                expr = new AssignExpr(expr, binExpr);
+                left = new AssignExpr(left, new BinExpr(left, nextExpr(), operator));
                 continue;
             } else if (at("|")) {
-                binExpr.operator += mToken.value;
+                operator += mToken.value;
                 next(); // skip operator
             }
 
-            binExpr.right = nextBinExprXOr();
-            expr = binExpr;
+            left = new BinExpr(left, nextBinExprXOr(), operator);
         }
 
-        return expr;
+        return left;
     }
 
     private Expr nextBinExprXOr() {
-        var expr = nextBinExprCmp();
+        var left = nextBinExprCmp();
 
         while (at("^")) {
-            final var binExpr = new BinExpr();
-            binExpr.left = expr;
-            binExpr.operator = mToken.value;
+            var operator = mToken.value;
 
             next(); // skip operator
             if (at("=")) {
                 next(); // skip =
-                binExpr.right = nextExpr();
-                expr = new AssignExpr(expr, binExpr);
+                left = new AssignExpr(left, new BinExpr(left, nextExpr(), operator));
                 continue;
             }
 
-            binExpr.right = nextBinExprCmp();
-            expr = binExpr;
+            left = new BinExpr(left, nextBinExprCmp(), operator);
         }
 
-        return expr;
+        return left;
     }
 
     private Expr nextBinExprCmp() {
-        var expr = nextBinExprSum();
+        var left = nextBinExprSum();
 
         while (at("=") || at("!") || at("<") || at(">")) {
-            final var binExpr = new BinExpr();
-            binExpr.left = expr;
-            binExpr.operator = mToken.value;
+            var operator = mToken.value;
 
             next(); // skip operator
             if (at("=")) {
-                binExpr.operator += mToken.value;
+                operator += mToken.value;
                 next(); // skip operator
-            } else if (binExpr.operator.equals("=")) {
-                expr = new AssignExpr(expr, nextExpr());
+            } else if (operator.equals("=")) {
+                left = new AssignExpr(left, nextExpr());
                 continue;
             }
 
-            binExpr.right = nextBinExprSum();
-            expr = binExpr;
+            left = new BinExpr(left, nextBinExprSum(), operator);
         }
 
-        return expr;
+        return left;
     }
 
     private Expr nextBinExprSum() {
-        var expr = nextBinExprPro();
+        var left = nextBinExprPro();
 
         while (at("+") || at("-")) {
-            final var binExpr = new BinExpr();
-            binExpr.left = expr;
-            binExpr.operator = mToken.value;
+            var operator = mToken.value;
 
             next(); // skip operator
             if (at("=")) {
-                next(); // skip operator
-                binExpr.right = nextExpr();
-                expr = new AssignExpr(expr, binExpr);
+                next(); // skip =
+                left = new AssignExpr(left, new BinExpr(left, nextExpr(), operator));
                 continue;
-            } else if (at(binExpr.operator)) {
+            } else if (at(operator)) {
                 next(); // skip operator
-                binExpr.right = new NumExpr(1);
-                expr = new AssignExpr(expr, binExpr);
+                left = new AssignExpr(left, new BinExpr(left, new NumExpr(1), operator));
                 continue;
             }
 
-            binExpr.right = nextBinExprPro();
-            expr = binExpr;
+            left = new BinExpr(left, nextBinExprPro(), operator);
         }
 
-        return expr;
+        return left;
     }
 
     private Expr nextBinExprPro() {
-        var expr = nextCallExpr();
+        var left = nextBinIndexExpr();
 
         while (at("*") || at("/") || at("%")) {
-            final var binExpr = new BinExpr();
-            binExpr.left = expr;
-            binExpr.operator = mToken.value;
+            var operator = mToken.value;
 
             next(); // skip operator
             if (at("=")) {
                 next(); // skip operator
-                binExpr.right = nextExpr();
-                expr = new AssignExpr(expr, binExpr);
+                left = new AssignExpr(left, new BinExpr(left, nextExpr(), operator));
                 continue;
             }
 
-            binExpr.right = nextCallExpr();
-            expr = binExpr;
+            left = new BinExpr(left, nextBinIndexExpr(), operator);
+        }
+
+        return left;
+    }
+
+    private Expr nextBinIndexExpr() {
+        var expr = nextCallExpr();
+
+        while (at("[")) {
+            next(); // skip [
+            final var index = nextExpr();
+            expectAndNext("]"); // skip ]
+            expr = new BinExpr(expr, index, "[]");
         }
 
         return expr;
     }
 
     private Expr nextCallExpr() {
-        var expr = nextMemExpr();
+        return nextCallExpr(nextMemExpr());
+    }
 
+    private Expr nextCallExpr(Expr expr) {
         while (at("(")) {
-            final var callExpr = new CallExpr();
-            callExpr.function = expr;
-
             final List<Expr> arguments = new Vector<>();
             next(); // skip (
             while (!eof() && !at(")")) {
@@ -736,9 +732,8 @@ public class Parser {
                     expectAndNext(","); // skip ,
             }
             expectAndNext(")"); // skip )
-            callExpr.arguments = arguments.toArray(new Expr[0]);
 
-            expr = callExpr;
+            expr = new CallExpr(expr, arguments.toArray(new Expr[0]));
 
             if (at("."))
                 expr = nextMemExpr(expr);
@@ -753,12 +748,8 @@ public class Parser {
 
     private Expr nextMemExpr(Expr expr) {
         while (at(".")) {
-            final var memExpr = new MemExpr();
-            memExpr.object = expr;
             next(); // skip .
-            memExpr.member = ((IdExpr) nextPrimExpr()).name;
-
-            expr = memExpr;
+            expr = new MemExpr(expr, ((IdExpr) nextPrimExpr()).value);
         }
 
         return expr;
@@ -802,15 +793,15 @@ public class Parser {
             }
             case "-": {
                 next(); // skip -
-                return new UnExpr("-", nextCallExpr());
+                return new UnExpr("-", nextBinIndexExpr());
             }
             case "!": {
                 next(); // skip !
-                return new UnExpr("!", nextCallExpr());
+                return new UnExpr("!", nextBinIndexExpr());
             }
             case "~": {
                 next(); // skip ~
-                return new UnExpr("~", nextCallExpr());
+                return new UnExpr("~", nextBinIndexExpr());
             }
         }
 
