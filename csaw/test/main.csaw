@@ -12,12 +12,10 @@
     for (num i = 0; i < n; i++)
         threads[i].join();
 
-    exec([](a: num, b: num, c: num) {
-        out("%s + %s + %s = ", a, b, c);
-        num result = a + b + c;
-        out("%s%n", result);
-        ret result;
-    }, 1, 2, 3);
+    out(" = %s%n", exec([](a: num, b: num, c: num) {
+        out("%s + %s + %s", a, b, c);
+        ret a + b + c;
+    }, 1, 2, 3));
 
     ret 0;
 }
