@@ -10,29 +10,25 @@ import java.util.Arrays;
 
 import io.scriptor.csaw.impl.Parser;
 import io.scriptor.csaw.impl.interpreter.Environment;
-import io.scriptor.csaw.impl.interpreter.value.NumValue;
 import io.scriptor.csaw.impl.interpreter.value.StrValue;
-import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.Collector;
 import io.scriptor.java.ErrorUtil;
 
 public class CSaw {
 
     public static void main(String[] args) {
+        if (args.length == 0)
+            shell();
 
-        switch (args.length) {
-            case 0:
-                shell();
-                break;
-
-            case 1:
-                run(args[0], Arrays.copyOfRange(args, 1, args.length));
-                break;
-
-            default:
-                System.out.println("wrong number arguments, usage: \"csaw\" or \"csaw <filepath>\"");
-                break;
+        switch (args[0]) {
+            case "-h":
+            case "--help":
+                System.out.println("csaw shell: csaw");
+                System.out.println("run file: csaw <file> [args]");
+                return;
         }
+
+        run(args[0], Arrays.copyOfRange(args, 1, args.length));
     }
 
     public static void shell() {
@@ -73,21 +69,10 @@ public class CSaw {
 
         Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env);
 
-        Value exit;
         if (hasFunction(null, "main")) {
-            exit = getAndInvoke(null, "main");
-        } else {
-            final var argc = new NumValue(args.length);
             final var argv = Arrays.stream(args).map(arg -> new StrValue(arg)).toArray(size -> new StrValue[size]);
-            final var valargs = new Value[1 + argv.length];
-            valargs[0] = argc;
-            for (int i = 0; i < argv.length; i++)
-                valargs[i + 1] = argv[i];
-
-            exit = getAndInvoke(null, "main", valargs);
+            System.out.printf("Exit Code %s%n", getAndInvoke(null, "main", argv));
         }
-
-        System.out.printf("Exit Code %s%n", exit);
     }
 
 }

@@ -21,8 +21,8 @@ num HEIGHT = WIDTH;
     num size = 2;
 #
 
-    ofstream output = ofstream("out.ppm");
-    output.write("P3%n%.0f %.0f%n255%n", WIDTH, HEIGHT);
+    ofstream output = ofstream("output/out.ppm");
+    output.write("P3%n%d %d%n255%n", WIDTH, HEIGHT);
 
     for (num j = 0; j < HEIGHT; j++) {
         for (num i = 0; i < WIDTH; i++) {
@@ -36,7 +36,7 @@ num HEIGHT = WIDTH;
             n = n / (SAMPLES * MAX_ITER);
             ## out("%c", symbol(n));
             num grey = floor(n * 255.999);
-            output.write("%.0f %.0f %.0f%n", grey, grey, grey);
+            output.write("%d %d %d%n", grey, grey, grey);
         }
         ## out("%n");
     }

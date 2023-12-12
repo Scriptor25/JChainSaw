@@ -9,15 +9,16 @@ import javax.imageio.ImageIO;
 
 import io.scriptor.csaw.impl.interpreter.value.NumValue;
 import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("img")
-public class CSawImg {
+public class CSawImg extends Value {
 
     private final BufferedImage mData;
 
     public CSawImg(StrValue filepath) {
-        mData = handle(() -> ImageIO.read(new File(filepath.getValue())));
+        mData = handle(() -> ImageIO.read(new File(filepath.get())));
     }
 
     public CSawImg(NumValue width, NumValue height) {
@@ -61,6 +62,26 @@ public class CSawImg {
     }
 
     public NumValue write(StrValue format, StrValue file) {
-        return new NumValue(handle(() -> ImageIO.write(mData, format.getValue(), new File(file.getValue()))));
+        return new NumValue(handle(() -> ImageIO.write(mData, format.get(), new File(file.get()))));
+    }
+
+    @Override
+    protected BufferedImage value() {
+        return mData;
+    }
+
+    @Override
+    protected String type() {
+        return "img";
+    }
+
+    @Override
+    protected boolean bool() {
+        return mData != null;
+    }
+
+    @Override
+    protected String string() {
+        return mData.toString();
     }
 }

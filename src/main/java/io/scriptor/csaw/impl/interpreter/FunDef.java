@@ -4,7 +4,6 @@ import static io.scriptor.csaw.impl.interpreter.Environment.getGlobal;
 import static io.scriptor.csaw.impl.interpreter.Environment.isAssignable;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.interpreter.value.NativeValue;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.csaw.impl.stmt.EnclosedStmt;
 import io.scriptor.csaw.lang.CSawList;
@@ -34,11 +33,10 @@ public class FunDef {
                 env.createVariable(parameters[i], definition.parameters[i], args[i]);
 
             if (definition.vararg != null) {
-                final var value = (NativeValue) Value.makeValue(getGlobal(), "list", false, false);
-                final var valist = (CSawList) value.getValue();
+                final var valist = (CSawList) Value.makeValue(getGlobal(), "list", false, false);
                 for (int i = parameters.length; i < args.length; i++)
                     valist.add(args[i]);
-                env.createVariable(definition.vararg, "list", value);
+                env.createVariable(definition.vararg, "list", valist);
             }
 
             if (definition.constructor)

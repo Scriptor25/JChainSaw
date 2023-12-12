@@ -67,18 +67,18 @@ public class CSawStd {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getValue();
-        System.out.printf(fmt.getValue(), objArgs);
+        System.out.printf(fmt.get(), objArgs);
     }
 
     public static StrValue in(StrValue fmt, Value... args) {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getValue();
-        return new StrValue(System.console().readLine(fmt.getValue(), objArgs));
+        return new StrValue(System.console().readLine(fmt.get(), objArgs));
     }
 
     public static NumValue num(StrValue x) {
-        return new NumValue(Double.parseDouble(x.getValue()));
+        return new NumValue(Double.parseDouble(x.get()));
     }
 
     public static NumValue time() {

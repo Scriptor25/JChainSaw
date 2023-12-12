@@ -14,18 +14,28 @@ public class StrValue extends Value {
         mValue = value;
     }
 
-    public String getValue() {
+    public String get() {
         return mValue;
     }
 
     @Override
-    public String getType() {
+    protected String value() {
+        return mValue;
+    }
+
+    @Override
+    protected String type() {
         return TYPE_STR;
     }
 
     @Override
-    public boolean asBoolean() {
+    protected boolean bool() {
         return mValue != null && !mValue.isEmpty();
+    }
+
+    @Override
+    protected String string() {
+        return mValue;
     }
 
     @Override
@@ -39,8 +49,4 @@ public class StrValue extends Value {
         return mValue.equals(((StrValue) other).mValue);
     }
 
-    @Override
-    public String toString() {
-        return mValue;
-    }
 }

@@ -6,14 +6,14 @@ import static io.scriptor.csaw.impl.interpreter.Environment.getFunction;
 import java.util.List;
 import java.util.Vector;
 
-import io.scriptor.csaw.impl.interpreter.value.NativeValue;
 import io.scriptor.csaw.impl.interpreter.value.NumValue;
 import io.scriptor.csaw.impl.interpreter.value.StrValue;
 import io.scriptor.csaw.impl.interpreter.value.Value;
+import io.scriptor.java.CSawAlias;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("list")
-public class CSawList {
+public class CSawList extends Value {
 
     private final List<Value> mValues = new Vector<>();
 
@@ -24,8 +24,9 @@ public class CSawList {
         mValues.addAll(values);
     }
 
+    @CSawAlias("[]")
     public Value get(NumValue index) {
-        return mValues.get((int) (double) index.getValue());
+        return mValues.get(index.getInt());
     }
 
     public void add(Value value) {
@@ -33,26 +34,41 @@ public class CSawList {
     }
 
     public void set(NumValue index, Value value) {
-        mValues.set((int) (double) index.getValue(), value);
+        mValues.set(index.getInt(), value);
     }
 
     public NumValue size() {
         return new NumValue(mValues.size());
     }
 
-    public NativeValue sub(NumValue from, NumValue to) {
-        return new NativeValue(
-                new CSawList(mValues.subList((int) (double) from.getValue(), (int) (double) to.getValue())));
+    public CSawList sub(NumValue from, NumValue to) {
+        return new CSawList(mValues.subList(from.getInt(), to.getInt()));
     }
 
-    public NativeValue sort(StrValue comparator) {
+    public CSawList sort(StrValue comparator) {
         final var list = new CSawList(mValues);
-        final var cmp = getFunction(null, comparator.getValue(), new String[] { TYPE_ANY, TYPE_ANY });
-        list.mValues.sort((v1, v2) -> {
-            final var val = ((NumValue) cmp.invoke(null, v1, v2)).getValue();
-            return (int) (double) val;
-        });
+        final var cmp = getFunction(null, comparator.get(), new String[] { TYPE_ANY, TYPE_ANY });
+        list.mValues.sort((v1, v2) -> cmp.invoke(null, v1, v2).asNum().getInt());
+        return list;
+    }
 
-        return new NativeValue(list);
+    @Override
+    protected List<Value> value() {
+        return mValues;
+    }
+
+    @Override
+    protected String type() {
+        return "list";
+    }
+
+    @Override
+    protected boolean bool() {
+        return !mValues.isEmpty();
+    }
+
+    @Override
+    protected String string() {
+        return mValues.toString();
     }
 }

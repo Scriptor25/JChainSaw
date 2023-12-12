@@ -29,7 +29,7 @@ inc "random.csaw";
         }
     }
 
-    out("Run!%nGame over! Your score: %.0f%n", score);
+    out("Run!%nGame over! Your score: %d%n", score);
 
     ret 0;
 }

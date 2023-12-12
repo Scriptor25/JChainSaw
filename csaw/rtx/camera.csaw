@@ -45,10 +45,10 @@ $camera {
     my.initialize();
 
     ofstream output = ofstream("out.ppm");
-    output.write("P3%n%.0f %.0f%n255%n", my.image_width, my.image_height);
+    output.write("P3%n%d %d%n255%n", my.image_width, my.image_height);
 
     for (num j = 0; j < my.image_height; j++) {
-        out("\rScanlines remaining: %.0f ", my.image_height - j);
+        out("\rScanlines remaining: %d ", my.image_height - j);
         for (num i = 0; i < my.image_width; i++) {
             color pixel_color = color(0, 0, 0);
             for (num sample = 0; sample < my.samples_per_pixel; sample++) {

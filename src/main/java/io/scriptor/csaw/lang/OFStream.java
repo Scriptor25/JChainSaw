@@ -12,12 +12,14 @@ import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("ofstream")
-public class OFStream {
+public class OFStream extends Value {
 
-    private BufferedWriter mWriter;
+    private final String mFilename;
+    private final BufferedWriter mWriter;
 
     public OFStream(StrValue filename) {
-        mWriter = new BufferedWriter(handle(() -> new FileWriter(filename.getValue())));
+        mFilename = filename.get();
+        mWriter = new BufferedWriter(handle(() -> new FileWriter(mFilename)));
     }
 
     public NumValue open() {
@@ -28,10 +30,30 @@ public class OFStream {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getValue();
-        handleVoid(() -> mWriter.write(String.format(fmt.getValue(), objArgs)));
+        handleVoid(() -> mWriter.write(String.format(fmt.get(), objArgs)));
     }
 
     public void close() {
         handleVoid(mWriter::close);
+    }
+
+    @Override
+    protected BufferedWriter value() {
+        return mWriter;
+    }
+
+    @Override
+    protected String type() {
+        return "ofstream";
+    }
+
+    @Override
+    protected boolean bool() {
+        return mWriter != null;
+    }
+
+    @Override
+    protected String string() {
+        return String.format("{ ofstream %s }", mFilename);
     }
 }

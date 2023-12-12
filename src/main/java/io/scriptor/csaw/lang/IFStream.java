@@ -8,15 +8,18 @@ import java.io.FileReader;
 
 import io.scriptor.csaw.impl.interpreter.value.NumValue;
 import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("ifstream")
-public class IFStream {
+public class IFStream extends Value {
 
-    private BufferedReader mReader;
+    private final String mFilename;
+    private final BufferedReader mReader;
 
     public IFStream(StrValue filename) {
-        mReader = new BufferedReader(handle(() -> new FileReader(filename.getValue())));
+        mFilename = filename.get();
+        mReader = new BufferedReader(handle(() -> new FileReader(mFilename)));
     }
 
     public NumValue open() {
@@ -29,5 +32,25 @@ public class IFStream {
 
     public void close() {
         handleVoid(mReader::close);
+    }
+
+    @Override
+    protected BufferedReader value() {
+        return mReader;
+    }
+
+    @Override
+    protected String type() {
+        return "ifstream";
+    }
+
+    @Override
+    protected boolean bool() {
+        return mReader != null && handle(mReader::ready);
+    }
+
+    @Override
+    protected String string() {
+        return String.format("{ ifstream %s }", mFilename);
     }
 }

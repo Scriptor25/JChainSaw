@@ -9,22 +9,22 @@ public class NullValue extends Value {
     }
 
     @Override
-    public Object getValue() {
+    protected Object value() {
         return null;
     }
 
     @Override
-    public String getType() {
+    protected String type() {
         return mType;
     }
 
     @Override
-    public boolean asBoolean() {
+    protected boolean bool() {
         return false;
     }
 
     @Override
-    public String toString() {
+    protected String string() {
         return String.format("null [%s]", mType);
     }
 

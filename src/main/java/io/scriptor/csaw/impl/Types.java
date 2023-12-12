@@ -9,4 +9,6 @@ public class Types {
     public static final String TYPE_NUM = "num";
     public static final String TYPE_STR = "str";
     public static final String TYPE_CHR = "chr";
+    public static final String TYPE_LAMBDA = "lambda";
+
 }

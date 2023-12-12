@@ -39,12 +39,12 @@ public abstract class Value {
         return this instanceof ObjValue;
     }
 
-    public boolean isNative() {
-        return this instanceof NativeValue;
-    }
-
     public boolean isNull() {
         return this instanceof NullValue;
+    }
+
+    public boolean isLambda() {
+        return this instanceof LambdaValue;
     }
 
     public boolean sameType(Value value) {
@@ -67,17 +67,34 @@ public abstract class Value {
         return (ObjValue) this;
     }
 
-    public NativeValue asNative() {
-        return (NativeValue) this;
+    public LambdaValue asLambda() {
+        return (LambdaValue) this;
     }
 
-    public abstract Object getValue();
+    protected abstract Object value();
 
-    public abstract String getType();
+    protected abstract String type();
 
-    public abstract boolean asBoolean();
+    protected abstract boolean bool();
 
-    public abstract String toString();
+    protected abstract String string();
+
+    public Object getValue() {
+        return value();
+    }
+
+    public String getType() {
+        return type();
+    }
+
+    public boolean asBoolean() {
+        return bool();
+    }
+
+    @Override
+    public String toString() {
+        return string();
+    }
 
     public static Value makeValue(Environment env, String type, boolean primitives, boolean dontConstruct) {
         switch (getOrigin(type)) {
@@ -208,7 +225,7 @@ public abstract class Value {
     }
 
     public static Value index(Environment env, Value left, Value right) {
-        return getAndInvoke(null, "[]", left, right);
+        return getAndInvoke(left, "[]", right);
     }
 
     public static Value neg(Environment env, Value value) {
