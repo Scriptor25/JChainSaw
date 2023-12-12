@@ -4,7 +4,7 @@ import static io.scriptor.csaw.impl.Types.TYPE_CHR;
 
 public class ChrValue extends Value {
 
-    private char mValue;
+    private final char mValue;
 
     public ChrValue() {
         mValue = '\0';
@@ -12,6 +12,10 @@ public class ChrValue extends Value {
 
     public ChrValue(char value) {
         mValue = value;
+    }
+
+    public char get() {
+        return mValue;
     }
 
     @Override

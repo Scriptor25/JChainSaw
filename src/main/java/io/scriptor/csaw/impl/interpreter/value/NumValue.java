@@ -4,7 +4,7 @@ import static io.scriptor.csaw.impl.Types.TYPE_NUM;
 
 public class NumValue extends Value {
 
-    private double mValue;
+    private final double mValue;
 
     public NumValue() {
         mValue = 0;
@@ -18,13 +18,21 @@ public class NumValue extends Value {
         mValue = value ? 1 : 0;
     }
 
-    public int asInt() {
+    public int getInt() {
         return (int) mValue;
     }
 
-    @Override
-    public Double getValue() {
+    public long getLong() {
+        return (long) mValue;
+    }
+
+    public double get() {
         return mValue;
+    }
+
+    @Override
+    public Number getValue() {
+        return mValue == Math.floor(mValue) ? (long) mValue : mValue;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package io.scriptor;
 
 import static io.scriptor.csaw.impl.interpreter.Environment.getAndInvoke;
+import static io.scriptor.csaw.impl.interpreter.Environment.hasFunction;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -72,14 +73,21 @@ public class CSaw {
 
         Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env);
 
-        final var argc = new NumValue(args.length);
-        final var argv = Arrays.stream(args).map(arg -> new StrValue(arg)).toArray(size -> new StrValue[size]);
-        final var valargs = new Value[1 + argv.length];
-        valargs[0] = argc;
-        for (int i = 0; i < argv.length; i++)
-            valargs[i + 1] = argv[i];
+        Value exit;
+        if (hasFunction(null, "main")) {
+            exit = getAndInvoke(null, "main");
+        } else {
+            final var argc = new NumValue(args.length);
+            final var argv = Arrays.stream(args).map(arg -> new StrValue(arg)).toArray(size -> new StrValue[size]);
+            final var valargs = new Value[1 + argv.length];
+            valargs[0] = argc;
+            for (int i = 0; i < argv.length; i++)
+                valargs[i + 1] = argv[i];
 
-        System.out.printf("Exit Code %s%n", getAndInvoke(null, "main", valargs));
+            exit = getAndInvoke(null, "main", valargs);
+        }
+
+        System.out.printf("Exit Code %s%n", exit);
     }
 
 }

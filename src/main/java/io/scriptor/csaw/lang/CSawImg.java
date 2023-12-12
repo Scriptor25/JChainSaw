@@ -21,7 +21,7 @@ public class CSawImg {
     }
 
     public CSawImg(NumValue width, NumValue height) {
-        mData = new BufferedImage(width.asInt(), height.asInt(), BufferedImage.TYPE_INT_ARGB);
+        mData = new BufferedImage(width.getInt(), height.getInt(), BufferedImage.TYPE_INT_ARGB);
     }
 
     private boolean noData() {
@@ -37,7 +37,7 @@ public class CSawImg {
     }
 
     private int getRGB(NumValue x, NumValue y) {
-        return mData.getRGB(x.asInt(), y.asInt());
+        return mData.getRGB(x.getInt(), y.getInt());
     }
 
     public NumValue getPixel(NumValue x, NumValue y) {
@@ -57,7 +57,7 @@ public class CSawImg {
     }
 
     public void setPixel(NumValue x, NumValue y, NumValue rgb) {
-        mData.setRGB(x.asInt(), y.asInt(), rgb.asInt());
+        mData.setRGB(x.getInt(), y.getInt(), rgb.getInt());
     }
 
     public NumValue write(StrValue format, StrValue file) {
