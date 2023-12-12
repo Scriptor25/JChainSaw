@@ -1,7 +1,7 @@
 package io.scriptor.csaw.lang;
 
-import static io.scriptor.java.ErrorUtil.tryCatch;
-import static io.scriptor.java.ErrorUtil.tryCatchVoid;
+import static io.scriptor.java.ErrorUtil.handle;
+import static io.scriptor.java.ErrorUtil.handleVoid;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -16,7 +16,7 @@ public class IFStream {
     private BufferedReader mReader;
 
     public IFStream(StrValue filename) {
-        mReader = new BufferedReader(tryCatch(() -> new FileReader(filename.getValue())));
+        mReader = new BufferedReader(handle(() -> new FileReader(filename.getValue())));
     }
 
     public NumValue open() {
@@ -24,10 +24,10 @@ public class IFStream {
     }
 
     public StrValue readLine() {
-        return new StrValue(tryCatch(mReader::readLine));
+        return new StrValue(handle(mReader::readLine));
     }
 
     public void close() {
-        tryCatchVoid(mReader::close);
+        handleVoid(mReader::close);
     }
 }

@@ -17,7 +17,7 @@ public class OFStream {
     private BufferedWriter mWriter;
 
     public OFStream(StrValue filename) {
-        mWriter = new BufferedWriter(tryCatch(() -> new FileWriter(filename.getValue())));
+        mWriter = new BufferedWriter(handle(() -> new FileWriter(filename.getValue())));
     }
 
     public NumValue open() {
@@ -28,10 +28,10 @@ public class OFStream {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getValue();
-        tryCatchVoid(() -> mWriter.write(String.format(fmt.getValue(), objArgs)));
+        handleVoid(() -> mWriter.write(String.format(fmt.getValue(), objArgs)));
     }
 
     public void close() {
-        tryCatchVoid(mWriter::close);
+        handleVoid(mWriter::close);
     }
 }
