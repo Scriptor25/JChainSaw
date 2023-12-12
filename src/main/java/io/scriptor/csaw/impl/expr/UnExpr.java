@@ -2,12 +2,12 @@ package io.scriptor.csaw.impl.expr;
 
 public class UnExpr extends Expr {
 
-    public String operator;
-    public Expr value;
+    public final String operator;
+    public final Expr value;
 
-    public UnExpr(String op, Expr val) {
-        operator = op;
-        value = val;
+    public UnExpr(String operator, Expr value) {
+        this.operator = operator;
+        this.value = value;
     }
 
     @Override

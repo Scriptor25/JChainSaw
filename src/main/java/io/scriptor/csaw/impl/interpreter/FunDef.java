@@ -4,8 +4,10 @@ import static io.scriptor.csaw.impl.interpreter.Environment.getGlobal;
 import static io.scriptor.csaw.impl.interpreter.Environment.isAssignable;
 
 import io.scriptor.csaw.impl.CSawException;
+import io.scriptor.csaw.impl.interpreter.value.NativeValue;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.csaw.impl.stmt.EnclosedStmt;
+import io.scriptor.csaw.lang.CSawList;
 
 public class FunDef {
 
@@ -28,8 +30,16 @@ public class FunDef {
         @Override
         public Value invoke(Value member, Value... args) {
             final var env = new Environment(getGlobal());
-            for (int i = 0; i < args.length; i++)
+            for (int i = 0; i < parameters.length; i++)
                 env.createVariable(parameters[i], definition.parameters[i], args[i]);
+
+            if (definition.vararg != null) {
+                final var value = (NativeValue) Value.makeValue(getGlobal(), "list", false, false);
+                final var valist = (CSawList) value.getValue();
+                for (int i = parameters.length; i < args.length; i++)
+                    valist.add(args[i]);
+                env.createVariable(definition.vararg, "list", value);
+            }
 
             if (definition.constructor)
                 env.createVariable("my", definition.type, Value.makeValue(env, definition.type, false, true));
@@ -64,7 +74,7 @@ public class FunDef {
         public boolean constructor;
         public String type;
         public String[] parameters;
-        public boolean vararg;
+        public String vararg;
         public String member;
         public IFunBody body;
 
@@ -83,7 +93,7 @@ public class FunDef {
             return this;
         }
 
-        public Builder vararg(boolean vararg) {
+        public Builder vararg(String vararg) {
             this.vararg = vararg;
             return this;
         }
@@ -106,11 +116,11 @@ public class FunDef {
     public final boolean constructor;
     public final String type;
     public final String[] parameters;
-    public final boolean vararg;
+    public final String vararg;
     public final String member;
     public final IFunBody body;
 
-    public FunDef(boolean constructor, String type, String[] parameters, boolean vararg, String member, IFunBody body) {
+    public FunDef(boolean constructor, String type, String[] parameters, String vararg, String member, IFunBody body) {
         this.constructor = constructor;
         this.type = type;
         this.parameters = parameters;

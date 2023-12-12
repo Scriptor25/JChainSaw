@@ -75,7 +75,7 @@ public class Interpreter {
         if (stmt instanceof Expr)
             return evaluate(env, (Expr) stmt);
 
-        throw new CSawException();
+        throw new CSawException("evaluation of statement '%s' not yet implemented", stmt);
     }
 
     public static Value evaluate(Environment env, EnclosedStmt stmt) {
@@ -191,12 +191,12 @@ public class Interpreter {
         if (expr instanceof UnExpr)
             return evaluate(env, (UnExpr) expr);
 
-        throw new CSawException();
+        throw new CSawException("evaluation of expression '%s' not yet implemented", expr);
     }
 
     public static Value evaluate(Environment env, AssignExpr expr) {
         if (expr.object instanceof IdExpr)
-            return env.setVariable(((IdExpr) expr.object).name, evaluate(env, expr.value));
+            return env.setVariable(((IdExpr) expr.object).value, evaluate(env, expr.value));
         if (expr.object instanceof MemExpr) {
             final var object = (ObjValue) evaluate(env, ((MemExpr) expr.object).object);
             return object.setField(((MemExpr) expr.object).member, evaluate(env, expr.value));
@@ -227,8 +227,13 @@ public class Interpreter {
             case "/" -> Value.div(env, left, right);
             case "%" -> Value.mod(env, left, right);
             case "^" -> Value.xor(env, left, right);
+            case "[]" -> Value.index(env, left, right);
 
-            default -> throw new CSawException("unsupported operator '%s'", expr.operator);
+            default -> throw new CSawException(
+                    "operator '%s' not supported for types '%s' and '%s'",
+                    expr.operator,
+                    left.getType(),
+                    right.getType());
         };
     }
 
@@ -244,7 +249,7 @@ public class Interpreter {
         Value member = null;
 
         if (expr.function instanceof IdExpr)
-            name = ((IdExpr) expr.function).name;
+            name = ((IdExpr) expr.function).value;
         else if (expr.function instanceof MemExpr) {
             member = evaluate(env, ((MemExpr) expr.function).object);
             name = ((MemExpr) expr.function).member;
@@ -265,7 +270,7 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, IdExpr expr) {
-        return env.getVariable(expr.name);
+        return env.getVariable(expr.value);
     }
 
     public static Value evaluate(Environment env, MemExpr expr) {

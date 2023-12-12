@@ -2,7 +2,7 @@ package io.scriptor.csaw.impl.expr;
 
 public class NumExpr extends Expr {
 
-    public double value;
+    public final double value;
 
     public NumExpr(String value) {
         this.value = Double.parseDouble(value);

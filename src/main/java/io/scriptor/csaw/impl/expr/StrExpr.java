@@ -2,7 +2,7 @@ package io.scriptor.csaw.impl.expr;
 
 public class StrExpr extends Expr {
 
-    public String value;
+    public final String value;
 
     public StrExpr(String value) {
         this.value = value;

@@ -5,9 +5,13 @@ import static io.scriptor.csaw.impl.interpreter.Environment.getAndInvoke;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.Arrays;
 
 import io.scriptor.csaw.impl.Parser;
 import io.scriptor.csaw.impl.interpreter.Environment;
+import io.scriptor.csaw.impl.interpreter.value.NumValue;
+import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.Collector;
 import io.scriptor.java.ErrorUtil;
 
@@ -21,7 +25,7 @@ public class CSaw {
                 break;
 
             case 1:
-                run(args[0]);
+                run(args[0], Arrays.copyOfRange(args, 1, args.length));
                 break;
 
             default:
@@ -60,7 +64,7 @@ public class CSaw {
         }
     }
 
-    public static void run(String path) {
+    public static void run(String path, String[] args) {
         final var file = new File(path);
 
         final var env = Environment.initGlobal(file.getParent());
@@ -68,7 +72,14 @@ public class CSaw {
 
         Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env);
 
-        System.out.printf("Exit Code %s%n", getAndInvoke(null, "main"));
+        final var argc = new NumValue(args.length);
+        final var argv = Arrays.stream(args).map(arg -> new StrValue(arg)).toArray(size -> new StrValue[size]);
+        final var valargs = new Value[1 + argv.length];
+        valargs[0] = argc;
+        for (int i = 0; i < argv.length; i++)
+            valargs[i + 1] = argv[i];
+
+        System.out.printf("Exit Code %s%n", getAndInvoke(null, "main", valargs));
     }
 
 }

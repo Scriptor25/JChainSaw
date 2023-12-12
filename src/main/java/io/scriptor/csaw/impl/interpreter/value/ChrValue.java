@@ -6,6 +6,10 @@ public class ChrValue extends Value {
 
     private char mValue;
 
+    public ChrValue() {
+        mValue = '\0';
+    }
+
     public ChrValue(char value) {
         mValue = value;
     }

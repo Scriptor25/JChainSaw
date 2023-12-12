@@ -64,7 +64,7 @@ public class Environment {
             String name,
             String type,
             Parameter[] params,
-            boolean vararg,
+            String vararg,
             String member,
             EnclosedStmt body) {
 
@@ -106,7 +106,7 @@ public class Environment {
             String name,
             String type,
             String[] params,
-            boolean vararg,
+            String vararg,
             String member,
             IFunBody body) {
 
@@ -142,20 +142,20 @@ public class Environment {
         if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
             final var functions = FUNCTIONS.get(member).get(name);
             for (final var fun : functions) {
-                if (!fun.vararg && fun.parameters.length != types.length) // wrong params number and not vararg
+                if (fun.vararg == null && fun.parameters.length != types.length) // wrong params number and not vararg
                     continue;
-                if (fun.vararg && fun.parameters.length > types.length) // vararg but not enough params
+                if (fun.vararg != null && fun.parameters.length > types.length) // vararg but not enough params
                     continue;
 
                 int i = 0;
                 for (; i < fun.parameters.length; i++)
                     if (!isAssignable(types[i], fun.parameters[i]))
                         break;
-                if (i == fun.parameters.length || (fun.vararg && i < types.length)) // either right number of
-                                                                                    // params or the function has
-                                                                                    // to be vararg and then the
-                                                                                    // number must be less than the
-                                                                                    // params length
+                if (i == fun.parameters.length || (fun.vararg != null && i < types.length)) // either right number of
+                    // params or the function has
+                    // to be vararg and then the
+                    // number must be less than the
+                    // params length
                     return fun;
             }
         }

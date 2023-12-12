@@ -8,7 +8,7 @@ public class FunStmt extends Stmt {
     public String name;
     public String type;
     public Parameter[] parameters;
-    public boolean vararg;
+    public String vararg;
     public String member;
     public EnclosedStmt body;
 
@@ -22,6 +22,6 @@ public class FunStmt extends Stmt {
         }
 
         return String.format("%s%s: %s (%s)%s%s %s", constructor ? "$" : "@", name, type, paramBuilder,
-                vararg ? " $" : "", member != null ? " -> " + member : "", body);
+                vararg != null ? " $" + vararg : "", member != null ? " -> " + member : "", body);
     }
 }

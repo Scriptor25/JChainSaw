@@ -2,15 +2,15 @@ package io.scriptor.csaw.impl.expr;
 
 public class IdExpr extends Expr {
 
-    public String name;
+    public final String value;
 
     public IdExpr(String name) {
-        this.name = name;
+        this.value = name;
     }
 
     @Override
     public String toString() {
-        return name;
+        return value;
     }
 
 }

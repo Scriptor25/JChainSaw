@@ -70,7 +70,7 @@ public class Collector {
                             typename,
                             typename,
                             params,
-                            cnstr.isVarArgs(),
+                            cnstr.isVarArgs() ? "va" : null,
                             null,
                             body);
                 }
@@ -99,7 +99,7 @@ public class Collector {
                             mthd.getName(),
                             getType(env, mthd.getReturnType()),
                             params,
-                            mthd.isVarArgs(),
+                            mthd.isVarArgs() ? "va" : null,
                             Modifier.isStatic(mthd.getModifiers()) ? null : typename,
                             body);
                 }
