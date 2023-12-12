@@ -44,8 +44,8 @@ $camera {
 @render (world: hittable) -> camera {
     my.initialize();
 
-    file output = file("out.ppm");
-    output.out("P3%n%.0f %.0f%n255%n", my.image_width, my.image_height);
+    ofstream output = ofstream("out.ppm");
+    output.write("P3%n%.0f %.0f%n255%n", my.image_width, my.image_height);
 
     for (num j = 0; j < my.image_height; j++) {
         out("\rScanlines remaining: %.0f ", my.image_height - j);
