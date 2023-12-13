@@ -1,9 +1,9 @@
 num MAX = 4;
 num MAX_THREAD = 4;
 
-list matA;
-list matB;
-list matC;
+num[MAX][MAX] matA;
+num[MAX][MAX] matB;
+num[MAX][MAX] matC;
 num step_i = 0;
 
 @multi {
@@ -12,23 +12,15 @@ num step_i = 0;
 
     for (num j = 0; j < MAX; j++)
         for (num k = 0; k < MAX; k++)
-            matC[i].set(j, matC[i][j] + matA[i][k] * matB[k][j]);
+            matC[i][j] += matA[i][k] * matB[k][j];
 }
 
 @main: num {
 
-    matA = list();
-    matB = list();
-    matC = list();
-
     for (num i = 0; i < MAX; i++) {
-        matA.add(list());
-        matB.add(list());
-        matC.add(list());
         for (num j = 0; j < MAX; j++) {
-            matA[i].add(random() * 10);
-            matB[i].add(random() * 10);
-            matC[i].add(0);
+            matA[i][j] = random() * 10;
+            matB[i][j] = random() * 10;
         }
     }
 

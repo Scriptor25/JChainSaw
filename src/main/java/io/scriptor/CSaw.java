@@ -10,7 +10,7 @@ import java.util.Arrays;
 
 import io.scriptor.csaw.impl.Parser;
 import io.scriptor.csaw.impl.interpreter.Environment;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.java.Collector;
 import io.scriptor.java.ErrorUtil;
 
@@ -72,7 +72,7 @@ public class CSaw {
         Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env);
 
         if (hasFunction(null, "main")) {
-            final var argv = Arrays.stream(args).map(arg -> new StrValue(arg)).toArray(size -> new StrValue[size]);
+            final var argv = Arrays.stream(args).map(arg -> new ConstStr(arg)).toArray(size -> new ConstStr[size]);
             System.out.printf("Exit Code %s%n", getAndInvoke(null, "main", argv));
         }
     }

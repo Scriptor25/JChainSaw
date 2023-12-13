@@ -21,10 +21,10 @@ import io.scriptor.csaw.impl.CSawException;
 import io.scriptor.csaw.impl.Parameter;
 import io.scriptor.csaw.impl.interpreter.Environment;
 import io.scriptor.csaw.impl.interpreter.IFunBody;
-import io.scriptor.csaw.impl.interpreter.value.ChrValue;
-import io.scriptor.csaw.impl.interpreter.value.LambdaValue;
-import io.scriptor.csaw.impl.interpreter.value.NumValue;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.ConstChr;
+import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 
 public class Collector {
@@ -136,16 +136,16 @@ public class Collector {
         if (cls.equals(Void.class) || cls.equals(void.class))
             return null;
 
-        if (cls.equals(NumValue.class))
+        if (cls.equals(ConstNum.class))
             return TYPE_NUM;
 
-        if (cls.equals(ChrValue.class))
+        if (cls.equals(ConstChr.class))
             return TYPE_CHR;
 
-        if (cls.equals(StrValue.class))
+        if (cls.equals(ConstStr.class))
             return TYPE_STR;
 
-        if (cls.equals(LambdaValue.class))
+        if (cls.equals(ConstLambda.class))
             return TYPE_LAMBDA;
 
         if (cls.equals(Value.class))

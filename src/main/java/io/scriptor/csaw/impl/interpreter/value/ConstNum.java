@@ -2,19 +2,19 @@ package io.scriptor.csaw.impl.interpreter.value;
 
 import static io.scriptor.csaw.impl.Types.TYPE_NUM;
 
-public class NumValue extends Value {
+public class ConstNum extends Value {
 
     private final double mValue;
 
-    public NumValue() {
+    public ConstNum() {
         mValue = 0;
     }
 
-    public NumValue(double value) {
+    public ConstNum(double value) {
         mValue = value;
     }
 
-    public NumValue(boolean value) {
+    public ConstNum(boolean value) {
         mValue = value ? 1 : 0;
     }
 

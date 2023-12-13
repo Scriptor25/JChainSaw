@@ -6,8 +6,8 @@ import static io.scriptor.java.ErrorUtil.handleVoid;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
-import io.scriptor.csaw.impl.interpreter.value.NumValue;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
@@ -17,16 +17,16 @@ public class OFStream extends Value {
     private final String mFilename;
     private final BufferedWriter mWriter;
 
-    public OFStream(StrValue filename) {
+    public OFStream(ConstStr filename) {
         mFilename = filename.get();
         mWriter = new BufferedWriter(handle(() -> new FileWriter(mFilename)));
     }
 
-    public NumValue open() {
-        return new NumValue(mWriter != null);
+    public ConstNum open() {
+        return new ConstNum(mWriter != null);
     }
 
-    public void write(StrValue fmt, Value... args) {
+    public void write(ConstStr fmt, Value... args) {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getObject();

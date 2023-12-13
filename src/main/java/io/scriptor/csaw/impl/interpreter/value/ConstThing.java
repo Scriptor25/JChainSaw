@@ -6,12 +6,12 @@ import java.util.Map;
 import io.scriptor.csaw.impl.Pair;
 import io.scriptor.csaw.impl.interpreter.Environment;
 
-public class ThingValue extends Value {
+public class ConstThing extends Value {
 
     private final String mType;
     private final Map<String, Pair<String, Value>> mFields = new HashMap<>();
 
-    public ThingValue(Environment env, String type) {
+    public ConstThing(Environment env, String type) {
         mType = type;
         for (final var field : Environment.getType(type))
             mFields.put(field.name, new Pair<>(field.type, Value.makeValue(env, field.type, true, false)));

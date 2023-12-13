@@ -27,10 +27,10 @@ import io.scriptor.csaw.impl.expr.MemExpr;
 import io.scriptor.csaw.impl.expr.NumExpr;
 import io.scriptor.csaw.impl.expr.StrExpr;
 import io.scriptor.csaw.impl.expr.UnExpr;
-import io.scriptor.csaw.impl.interpreter.value.ChrValue;
-import io.scriptor.csaw.impl.interpreter.value.LambdaValue;
-import io.scriptor.csaw.impl.interpreter.value.NumValue;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.value.ConstChr;
+import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.csaw.impl.stmt.AliasStmt;
 import io.scriptor.csaw.impl.stmt.EnclosedStmt;
@@ -280,7 +280,7 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, ChrExpr expr) {
-        return new ChrValue(expr.value);
+        return new ConstChr(expr.value);
     }
 
     public static Value evaluate(Environment env, ConExpr expr) {
@@ -297,7 +297,7 @@ public class Interpreter {
         final var passed = Arrays.stream(expr.passed)
                 .map(e -> new Pair<>(e.value, evaluate(env, e)))
                 .toArray(n -> new Pair[n]);
-        return new LambdaValue(passed, expr.parameters, expr.body);
+        return new ConstLambda(passed, expr.parameters, expr.body);
     }
 
     public static Value evaluate(Environment env, MemExpr expr) {
@@ -305,11 +305,11 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, NumExpr expr) {
-        return new NumValue(expr.value);
+        return new ConstNum(expr.value);
     }
 
     public static Value evaluate(Environment env, StrExpr expr) {
-        return new StrValue(expr.value);
+        return new ConstStr(expr.value);
     }
 
     public static Value evaluate(Environment env, UnExpr expr) {

@@ -12,13 +12,13 @@ import io.scriptor.csaw.impl.interpreter.Interpreter;
 import io.scriptor.csaw.impl.stmt.Stmt;
 import io.scriptor.csaw.lang.CSawList;
 
-public class LambdaValue extends Value {
+public class ConstLambda extends Value {
 
     private final Pair<String, Value>[] mPassed;
     private final Parameter[] mParameters;
     private final Stmt mBody;
 
-    public LambdaValue(Pair<String, Value>[] passed, Parameter[] parameters, Stmt body) {
+    public ConstLambda(Pair<String, Value>[] passed, Parameter[] parameters, Stmt body) {
         mPassed = passed;
         mParameters = parameters;
         mBody = body;
@@ -30,7 +30,7 @@ public class LambdaValue extends Value {
             final var size = list.size().getInt();
             args = new Value[size];
             for (int i = 0; i < size; i++)
-                args[i] = list.get(new NumValue(i));
+                args[i] = list.get(new ConstNum(i));
         }
 
         final var env = new Environment(getGlobal());

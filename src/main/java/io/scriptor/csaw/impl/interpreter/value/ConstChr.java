@@ -1,26 +1,26 @@
 package io.scriptor.csaw.impl.interpreter.value;
 
-import static io.scriptor.csaw.impl.Types.TYPE_STR;
+import static io.scriptor.csaw.impl.Types.TYPE_CHR;
 
-public class StrValue extends Value {
+public class ConstChr extends Value {
 
-    private final String mValue;
+    private final char mValue;
 
-    public StrValue() {
-        mValue = "";
+    public ConstChr() {
+        mValue = '\0';
     }
 
-    public StrValue(String value) {
+    public ConstChr(char value) {
         mValue = value;
     }
 
-    public String get() {
+    public char get() {
         return mValue;
     }
 
     @Override
     protected String type() {
-        return TYPE_STR;
+        return TYPE_CHR;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class StrValue extends Value {
 
     @Override
     protected String string() {
-        return mValue;
+        return Character.toString(mValue);
     }
 
 }

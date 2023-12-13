@@ -24,47 +24,47 @@ public abstract class Value {
     }
 
     public boolean isNum() {
-        return this instanceof NumValue;
+        return this instanceof ConstNum;
     }
 
     public boolean isStr() {
-        return this instanceof StrValue;
+        return this instanceof ConstStr;
     }
 
     public boolean isChr() {
-        return this instanceof ChrValue;
+        return this instanceof ConstChr;
     }
 
     public boolean isThing() {
-        return this instanceof ThingValue;
+        return this instanceof ConstThing;
     }
 
     public boolean isLambda() {
-        return this instanceof LambdaValue;
+        return this instanceof ConstLambda;
     }
 
     public boolean sameType(Value value) {
         return getClass().isInstance(value);
     }
 
-    public NumValue asNum() {
-        return (NumValue) this;
+    public ConstNum asNum() {
+        return (ConstNum) this;
     }
 
-    public StrValue asStr() {
-        return (StrValue) this;
+    public ConstStr asStr() {
+        return (ConstStr) this;
     }
 
-    public ChrValue asChr() {
-        return (ChrValue) this;
+    public ConstChr asChr() {
+        return (ConstChr) this;
     }
 
-    public ThingValue asThing() {
-        return (ThingValue) this;
+    public ConstThing asThing() {
+        return (ConstThing) this;
     }
 
-    public LambdaValue asLambda() {
-        return (LambdaValue) this;
+    public ConstLambda asLambda() {
+        return (ConstLambda) this;
     }
 
     protected abstract String type();
@@ -89,11 +89,11 @@ public abstract class Value {
     public static Value makeValue(Environment env, String type, boolean onlyPrimitives, boolean dontConstruct) {
         switch (getOrigin(type)) {
             case TYPE_NUM:
-                return new NumValue();
+                return new ConstNum();
             case TYPE_STR:
-                return new StrValue();
+                return new ConstStr();
             case TYPE_CHR:
-                return new ChrValue();
+                return new ConstChr();
             default:
                 break;
         }
@@ -104,126 +104,126 @@ public abstract class Value {
         if (!dontConstruct && hasFunction(null, type))
             return getAndInvoke(null, type);
 
-        return new ThingValue(env, type);
+        return new ConstThing(env, type);
     }
 
     public static Value binAnd(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().getInt() & right.asNum().getInt());
+            return new ConstNum(left.asNum().getInt() & right.asNum().getInt());
 
         return getAndInvoke(null, "&", left, right);
     }
 
     public static Value and(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() != 0.0 && right.asNum().get() != 0.0);
+            return new ConstNum(left.asNum().get() != 0.0 && right.asNum().get() != 0.0);
 
         return getAndInvoke(null, "&&", left, right);
     }
 
     public static Value binOr(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().getInt() | right.asNum().getInt());
+            return new ConstNum(left.asNum().getInt() | right.asNum().getInt());
 
         return getAndInvoke(null, "|", left, right);
     }
 
     public static Value or(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() != 0.0 || right.asNum().get() != 0.0);
+            return new ConstNum(left.asNum().get() != 0.0 || right.asNum().get() != 0.0);
 
         return getAndInvoke(null, "||", left, right);
     }
 
     public static Value cmpe(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() == right.asNum().get());
+            return new ConstNum(left.asNum().get() == right.asNum().get());
 
         if (left.isStr() && right.isStr())
-            return new NumValue(left.asStr().get().equals(right.asStr().get()));
+            return new ConstNum(left.asStr().get().equals(right.asStr().get()));
 
         return getAndInvoke(null, "==", left, right);
     }
 
     public static Value cmpne(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() != right.asNum().get());
+            return new ConstNum(left.asNum().get() != right.asNum().get());
 
         if (left.isStr() && right.isStr())
-            return new NumValue(!left.asStr().get().equals(right.asStr().get()));
+            return new ConstNum(!left.asStr().get().equals(right.asStr().get()));
 
         return getAndInvoke(null, "!=", left, right);
     }
 
     public static Value cmpl(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() < right.asNum().get());
+            return new ConstNum(left.asNum().get() < right.asNum().get());
 
         return getAndInvoke(null, "<", left, right);
     }
 
     public static Value cmple(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() <= right.asNum().get());
+            return new ConstNum(left.asNum().get() <= right.asNum().get());
 
         return getAndInvoke(null, "<=", left, right);
     }
 
     public static Value cmpg(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() > right.asNum().get());
+            return new ConstNum(left.asNum().get() > right.asNum().get());
 
         return getAndInvoke(null, ">", left, right);
     }
 
     public static Value cmpge(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() >= right.asNum().get());
+            return new ConstNum(left.asNum().get() >= right.asNum().get());
 
         return getAndInvoke(null, ">=", left, right);
     }
 
     public static Value add(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() + right.asNum().get());
+            return new ConstNum(left.asNum().get() + right.asNum().get());
 
         if (left.isStr() || right.isStr())
-            return new StrValue(left.toString() + right.toString());
+            return new ConstStr(left.toString() + right.toString());
 
         return getAndInvoke(null, "+", left, right);
     }
 
     public static Value sub(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() - right.asNum().get());
+            return new ConstNum(left.asNum().get() - right.asNum().get());
 
         return getAndInvoke(null, "-", left, right);
     }
 
     public static Value mul(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() * right.asNum().get());
+            return new ConstNum(left.asNum().get() * right.asNum().get());
 
         return getAndInvoke(null, "*", left, right);
     }
 
     public static Value div(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() / right.asNum().get());
+            return new ConstNum(left.asNum().get() / right.asNum().get());
 
         return getAndInvoke(null, "/", left, right);
     }
 
     public static Value mod(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().get() % right.asNum().get());
+            return new ConstNum(left.asNum().get() % right.asNum().get());
 
         return getAndInvoke(null, "%", left, right);
     }
 
     public static Value xor(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
-            return new NumValue(left.asNum().getInt() ^ right.asNum().getInt());
+            return new ConstNum(left.asNum().getInt() ^ right.asNum().getInt());
 
         return getAndInvoke(null, "^", left, right);
     }
@@ -234,21 +234,21 @@ public abstract class Value {
 
     public static Value neg(Environment env, Value value) {
         if (value.isNum())
-            return new NumValue(-value.asNum().get());
+            return new ConstNum(-value.asNum().get());
 
         return getAndInvoke(value, "-");
     }
 
     public static Value not(Environment env, Value value) {
         if (value.isNum())
-            return new NumValue(value.asNum().get() == 0.0);
+            return new ConstNum(value.asNum().get() == 0.0);
 
         return getAndInvoke(value, "!");
     }
 
     public static Value inv(Environment env, Value value) {
         if (value.isNum())
-            return new NumValue(~value.asNum().getInt());
+            return new ConstNum(~value.asNum().getInt());
 
         return getAndInvoke(value, "~");
     }
