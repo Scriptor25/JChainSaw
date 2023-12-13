@@ -29,7 +29,7 @@ public class OFStream extends Value {
     public void write(StrValue fmt, Value... args) {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
-            objArgs[i] = args[i].getValue();
+            objArgs[i] = args[i].getObject();
         handleVoid(() -> mWriter.write(String.format(fmt.get(), objArgs)));
     }
 
@@ -38,18 +38,13 @@ public class OFStream extends Value {
     }
 
     @Override
-    protected BufferedWriter value() {
-        return mWriter;
-    }
-
-    @Override
     protected String type() {
         return "ofstream";
     }
 
     @Override
-    protected boolean bool() {
-        return mWriter != null;
+    protected Object object() {
+        return mWriter;
     }
 
     @Override

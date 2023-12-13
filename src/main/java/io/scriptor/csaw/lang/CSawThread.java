@@ -28,18 +28,13 @@ public class CSawThread extends Value {
     }
 
     @Override
-    protected Thread value() {
-        return mThread;
-    }
-
-    @Override
     protected String type() {
         return "thrd";
     }
 
     @Override
-    protected boolean bool() {
-        return mThread.isAlive();
+    protected Object object() {
+        return mThread;
     }
 
     @Override

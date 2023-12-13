@@ -48,18 +48,13 @@ public class LambdaValue extends Value {
     }
 
     @Override
-    protected Object value() {
-        throw new UnsupportedOperationException("Method not supported");
-    }
-
-    @Override
     protected String type() {
         return Types.TYPE_LAMBDA;
     }
 
     @Override
-    protected boolean bool() {
-        return true;
+    protected Object object() {
+        return null;
     }
 
     @Override

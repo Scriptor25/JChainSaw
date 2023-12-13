@@ -53,18 +53,13 @@ public class CSawList extends Value {
     }
 
     @Override
-    protected List<Value> value() {
-        return mValues;
-    }
-
-    @Override
     protected String type() {
         return "list";
     }
 
     @Override
-    protected boolean bool() {
-        return !mValues.isEmpty();
+    protected Object object() {
+        return mValues;
     }
 
     @Override

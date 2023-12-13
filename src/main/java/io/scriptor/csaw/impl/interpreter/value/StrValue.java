@@ -19,34 +19,18 @@ public class StrValue extends Value {
     }
 
     @Override
-    protected String value() {
-        return mValue;
-    }
-
-    @Override
     protected String type() {
         return TYPE_STR;
     }
 
     @Override
-    protected boolean bool() {
-        return mValue != null && !mValue.isEmpty();
+    protected Object object() {
+        return mValue;
     }
 
     @Override
     protected String string() {
         return mValue;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == null)
-            return false;
-        if (other == this)
-            return true;
-        if (!(other instanceof StrValue))
-            return false;
-        return mValue.equals(((StrValue) other).mValue);
     }
 
 }

@@ -66,18 +66,13 @@ public class CSawImg extends Value {
     }
 
     @Override
-    protected BufferedImage value() {
-        return mData;
-    }
-
-    @Override
     protected String type() {
         return "img";
     }
 
     @Override
-    protected boolean bool() {
-        return mData != null;
+    protected Object object() {
+        return mData;
     }
 
     @Override

@@ -35,18 +35,13 @@ public class IFStream extends Value {
     }
 
     @Override
-    protected BufferedReader value() {
-        return mReader;
-    }
-
-    @Override
     protected String type() {
         return "ifstream";
     }
 
     @Override
-    protected boolean bool() {
-        return mReader != null && handle(mReader::ready);
+    protected Object object() {
+        return mReader;
     }
 
     @Override

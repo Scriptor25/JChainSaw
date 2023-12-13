@@ -17,8 +17,10 @@ import io.scriptor.java.ErrorUtil;
 public class CSaw {
 
     public static void main(String[] args) {
-        if (args.length == 0)
+        if (args.length == 0) {
             shell();
+            return;
+        }
 
         switch (args[0]) {
             case "-h":
@@ -56,7 +58,7 @@ public class CSaw {
             try {
                 Parser.parse(new ByteArrayInputStream(input.getBytes()), env);
             } catch (Throwable t) {
-                System.out.println(t.getMessage());
+                t.printStackTrace();
             }
         }
     }

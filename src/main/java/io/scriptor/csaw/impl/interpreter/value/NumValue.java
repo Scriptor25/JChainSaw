@@ -18,6 +18,10 @@ public class NumValue extends Value {
         mValue = value ? 1 : 0;
     }
 
+    public boolean getBool() {
+        return mValue != 0;
+    }
+
     public int getInt() {
         return (int) mValue;
     }
@@ -31,36 +35,20 @@ public class NumValue extends Value {
     }
 
     @Override
-    protected Number value() {
-        if (mValue == (long) mValue)
-            return (long) mValue;
-        return mValue;
-    }
-
-    @Override
     protected String type() {
         return TYPE_NUM;
     }
 
     @Override
-    protected boolean bool() {
-        return mValue != 0;
+    protected Object object() {
+        if (mValue == getLong())
+            return getLong();
+        return mValue;
     }
 
     @Override
     protected String string() {
-        return mValue == Math.floor(mValue) ? Long.toString((long) mValue) : Double.toString(mValue);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == null)
-            return false;
-        if (other == this)
-            return true;
-        if (!(other instanceof NumValue))
-            return false;
-        return mValue == ((NumValue) other).mValue;
+        return object().toString();
     }
 
 }

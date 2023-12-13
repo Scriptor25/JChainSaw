@@ -44,7 +44,7 @@ $camera {
 @render (world: hittable) -> camera {
     my.initialize();
 
-    ofstream output = ofstream("out.ppm");
+    ofstream output = ofstream("output/out.ppm");
     output.write("P3%n%d %d%n255%n", my.image_width, my.image_height);
 
     for (num j = 0; j < my.image_height; j++) {

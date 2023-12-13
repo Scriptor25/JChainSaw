@@ -1,25 +1,67 @@
-@main: num {
+num MAX = 4;
+num MAX_THREAD = 4;
 
-    list threads;
-    num n = 11;
+list matA;
+list matB;
+list matC;
+num step_i = 0;
 
-    for (num i = 0; i < n; i++)
-        threads.add(thrd([i]() out("Hello from thread %d!%n", i)));
-    
-    for (num i = 0; i < n; i++)
-        threads[i].start();
+@multi {
+    num i = step_i;
+    step_i++;
 
-    for (num i = 0; i < n; i++)
-        threads[i].join();
-
-    out(" = %s%n", exec([](a: num, b: num, c: num) {
-        out("%s + %s + %s", a, b, c);
-        ret a + b + c;
-    }, 1, 2, 3));
-
-    ret 0;
+    for (num j = 0; j < MAX; j++)
+        for (num k = 0; k < MAX; k++)
+            matC[i].set(j, matC[i][j] + matA[i][k] * matB[k][j]);
 }
 
-@exec: any (l: lambda) $args {
-    ret l(args);
+@main: num {
+
+    matA = list();
+    matB = list();
+    matC = list();
+
+    for (num i = 0; i < MAX; i++) {
+        matA.add(list());
+        matB.add(list());
+        matC.add(list());
+        for (num j = 0; j < MAX; j++) {
+            matA[i].add(random() * 10);
+            matB[i].add(random() * 10);
+            matC[i].add(0);
+        }
+    }
+
+    out("Matrix A:%n");
+    for (num i = 0; i < MAX; i++) {
+        for (num j = 0; j < MAX; j++)
+            out("%s ", matA[i][j]);
+        out("%n");
+    }
+
+    out("%nMatrix B:%n");
+    for (num i = 0; i < MAX; i++) {
+        for (num j = 0; j < MAX; j++)
+            out("%s ", matB[i][j]);
+        out("%n");
+    }
+
+    list threads = list();
+    for (num i = 0; i < MAX_THREAD; i++) {
+        thrd t = thrd([]() multi());
+        threads.add(t);
+        t.start();
+    }
+
+    for (num i = 0; i < MAX_THREAD; i++)
+        threads[i].join();
+    
+    out("%nMultiplication of A and B:%n");
+    for (num i = 0; i < MAX; i++) {
+        for (num j = 0; j < MAX; j++)
+            out("%s ", matC[i][j]);
+        out("%n");
+    }
+
+    ret 0;
 }

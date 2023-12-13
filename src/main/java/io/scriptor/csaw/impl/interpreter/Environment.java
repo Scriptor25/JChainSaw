@@ -53,7 +53,7 @@ public class Environment {
                 for (; i < fun.parameters.length; i++)
                     if (!isAssignable(types[i], fun.parameters[i]))
                         break;
-                if (i == fun.parameters.length || (fun.vararg != null && i < types.length))
+                if (i == fun.parameters.length)
                     return true;
             }
         }
@@ -153,11 +153,7 @@ public class Environment {
                 for (; i < fun.parameters.length; i++)
                     if (!isAssignable(types[i], fun.parameters[i]))
                         break;
-                if (i == fun.parameters.length || (fun.vararg != null && i < types.length)) // either right number of
-                    // params or the function has
-                    // to be vararg and then the
-                    // number must be less than the
-                    // params length
+                if (i == fun.parameters.length)
                     return fun;
             }
         }
