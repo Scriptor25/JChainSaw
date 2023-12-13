@@ -11,9 +11,9 @@ num HEIGHT = WIDTH;
 
 @main: num {
 
-    num xc = num(in("xc: "));
-    num yc = num(in("yc: "));
-    num size = num(in("size: "));
+    num xc = num(readf("xc: "));
+    num yc = num(readf("yc: "));
+    num size = num(readf("size: "));
 
 #
     num xc = -0.5;
@@ -34,11 +34,11 @@ num HEIGHT = WIDTH;
                 n += mandel(z0, MAX_ITER);
             }
             n = n / (SAMPLES * MAX_ITER);
-            ## out("%c", symbol(n));
+            ## printf("%c", symbol(n));
             num grey = floor(n * 255.999);
             output.write("%d %d %d%n", grey, grey, grey);
         }
-        ## out("%n");
+        ## printf("%n");
     }
     
     output.close();

@@ -75,7 +75,7 @@ $complex (real: num, imaginary: num) { my.real = real; my.imaginary = imaginary;
 }
 
 @out (c: complex) {
-    out("%f %s", c.real, (c.imaginary < 0 ? "" : "+ ") + c.imaginary + "i");
+    printf("%f %s", c.real, (c.imaginary < 0 ? "" : "+ ") + c.imaginary + "i");
 }
 
 @exp: complex (z: complex) {

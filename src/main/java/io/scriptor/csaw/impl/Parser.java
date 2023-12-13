@@ -551,7 +551,7 @@ public class Parser {
     }
 
     private VarStmt nextVarStmt(Expr type, boolean semicolon) {
-        if (type instanceof IdExpr || type instanceof IndexExpr && at(TokenType.IDENTIFIER)) {
+        if ((type instanceof IdExpr || type instanceof IndexExpr) && at(TokenType.IDENTIFIER)) {
             final var stmt = new VarStmt();
             stmt.type = nextType(type);
             stmt.name = mToken.value;

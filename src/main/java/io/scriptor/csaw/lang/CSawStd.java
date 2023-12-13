@@ -63,14 +63,14 @@ public class CSawStd {
         return new ConstNum(Math.pow(x.get(), y.get()));
     }
 
-    public static void out(ConstStr fmt, Value... args) {
+    public static void printf(ConstStr fmt, Value... args) {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getObject();
         System.out.printf(fmt.get(), objArgs);
     }
 
-    public static ConstStr in(ConstStr fmt, Value... args) {
+    public static ConstStr readf(ConstStr fmt, Value... args) {
         final var objArgs = new Object[args == null ? 0 : args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getObject();
