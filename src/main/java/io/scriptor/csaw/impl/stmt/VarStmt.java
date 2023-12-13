@@ -1,10 +1,11 @@
 package io.scriptor.csaw.impl.stmt;
 
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.expr.Expr;
 
 public class VarStmt extends Stmt {
 
-    public String type;
+    public Type type;
     public String name;
     public Expr value;
 

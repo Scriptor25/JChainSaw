@@ -1,11 +1,11 @@
 package io.scriptor.csaw.lang;
 
-import static io.scriptor.csaw.impl.Types.TYPE_ANY;
 import static io.scriptor.csaw.impl.interpreter.Environment.getFunction;
 
 import java.util.List;
 import java.util.Vector;
 
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -47,14 +47,14 @@ public class CSawList extends Value {
 
     public CSawList sort(ConstStr comparator) {
         final var list = new CSawList(mValues);
-        final var cmp = getFunction(null, comparator.get(), new String[] { TYPE_ANY, TYPE_ANY });
+        final var cmp = getFunction(null, comparator.get(), Type.getAny(), Type.getAny());
         list.mValues.sort((v1, v2) -> cmp.invoke(null, v1, v2).asNum().getInt());
         return list;
     }
 
     @Override
-    protected String type() {
-        return "list";
+    protected Type type() {
+        return Type.get("list");
     }
 
     @Override

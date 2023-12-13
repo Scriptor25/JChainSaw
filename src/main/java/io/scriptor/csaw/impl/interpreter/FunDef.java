@@ -4,9 +4,9 @@ import static io.scriptor.csaw.impl.interpreter.Environment.getGlobal;
 import static io.scriptor.csaw.impl.interpreter.Environment.isAssignable;
 
 import io.scriptor.csaw.impl.CSawException;
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.csaw.impl.stmt.EnclosedStmt;
-import io.scriptor.csaw.lang.CSawList;
 
 public class FunDef {
 
@@ -33,10 +33,11 @@ public class FunDef {
                 env.createVariable(parameters[i], definition.parameters[i], args[i]);
 
             if (definition.vararg != null) {
-                final var valist = (CSawList) Value.makeValue(getGlobal(), "list", false, false);
+                final var at = Type.get(Type.getAny(), args.length);
+                final var va = Value.makeValue(getGlobal(), at, false, false).asRef();
                 for (int i = parameters.length; i < args.length; i++)
-                    valist.add(args[i]);
-                env.createVariable(definition.vararg, "list", valist);
+                    va.set(i, args[i]);
+                env.createVariable(definition.vararg, at, va);
             }
 
             if (definition.constructor)
@@ -70,10 +71,10 @@ public class FunDef {
     public static class Builder {
 
         public boolean constructor;
-        public String type;
-        public String[] parameters;
+        public Type type;
+        public Type[] parameters;
         public String vararg;
-        public String member;
+        public Type member;
         public IFunBody body;
 
         public Builder constructor(boolean constructor) {
@@ -81,12 +82,12 @@ public class FunDef {
             return this;
         }
 
-        public Builder type(String type) {
+        public Builder type(Type type) {
             this.type = type;
             return this;
         }
 
-        public Builder parameters(String[] parameters) {
+        public Builder parameters(Type[] parameters) {
             this.parameters = parameters;
             return this;
         }
@@ -96,7 +97,7 @@ public class FunDef {
             return this;
         }
 
-        public Builder member(String member) {
+        public Builder member(Type member) {
             this.member = member;
             return this;
         }
@@ -112,13 +113,13 @@ public class FunDef {
     }
 
     public final boolean constructor;
-    public final String type;
-    public final String[] parameters;
+    public final Type type;
+    public final Type[] parameters;
     public final String vararg;
-    public final String member;
+    public final Type member;
     public final IFunBody body;
 
-    public FunDef(boolean constructor, String type, String[] parameters, String vararg, String member, IFunBody body) {
+    public FunDef(boolean constructor, Type type, Type[] parameters, String vararg, Type member, IFunBody body) {
         this.constructor = constructor;
         this.type = type;
         this.parameters = parameters;

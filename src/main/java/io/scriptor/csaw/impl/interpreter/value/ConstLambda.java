@@ -2,11 +2,8 @@ package io.scriptor.csaw.impl.interpreter.value;
 
 import static io.scriptor.csaw.impl.interpreter.Environment.getGlobal;
 
-import java.util.Arrays;
-
-import io.scriptor.csaw.impl.Pair;
 import io.scriptor.csaw.impl.Parameter;
-import io.scriptor.csaw.impl.Types;
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.Environment;
 import io.scriptor.csaw.impl.interpreter.Interpreter;
 import io.scriptor.csaw.impl.stmt.Stmt;
@@ -14,11 +11,11 @@ import io.scriptor.csaw.lang.CSawList;
 
 public class ConstLambda extends Value {
 
-    private final Pair<String, Value>[] mPassed;
+    private final NamedValue[] mPassed;
     private final Parameter[] mParameters;
     private final Stmt mBody;
 
-    public ConstLambda(Pair<String, Value>[] passed, Parameter[] parameters, Stmt body) {
+    public ConstLambda(NamedValue[] passed, Parameter[] parameters, Stmt body) {
         mPassed = passed;
         mParameters = parameters;
         mBody = body;
@@ -35,7 +32,7 @@ public class ConstLambda extends Value {
 
         final var env = new Environment(getGlobal());
         for (final var p : mPassed)
-            env.createVariable(p.first, p.second.getType(), p.second);
+            env.createVariable(p.getName(), p.get().getType(), p.get());
 
         for (int i = 0; i < mParameters.length; i++)
             env.createVariable(mParameters[i].name, mParameters[i].type, args[i]);
@@ -48,8 +45,8 @@ public class ConstLambda extends Value {
     }
 
     @Override
-    protected String type() {
-        return Types.TYPE_LAMBDA;
+    protected Type type() {
+        return Type.getLambda();
     }
 
     @Override
@@ -59,7 +56,7 @@ public class ConstLambda extends Value {
 
     @Override
     protected String string() {
-        return String.format("{ %s %s %s }", Types.TYPE_LAMBDA, Arrays.toString(mPassed), Arrays.toString(mParameters));
+        return null;
     }
 
 }

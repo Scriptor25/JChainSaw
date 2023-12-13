@@ -1,15 +1,16 @@
 package io.scriptor.csaw.impl.stmt;
 
 import io.scriptor.csaw.impl.Parameter;
+import io.scriptor.csaw.impl.Type;
 
 public class FunStmt extends Stmt {
 
     public boolean constructor;
     public String name;
-    public String type;
+    public Type type;
     public Parameter[] parameters;
     public String vararg;
-    public String member;
+    public Type member;
     public EnclosedStmt body;
 
     @Override

@@ -1,7 +1,5 @@
 package io.scriptor.csaw.impl.interpreter;
 
-import static io.scriptor.csaw.impl.Types.TYPE_ANY;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +9,7 @@ import java.util.Vector;
 import io.scriptor.csaw.impl.CSawException;
 import io.scriptor.csaw.impl.Pair;
 import io.scriptor.csaw.impl.Parameter;
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.csaw.impl.stmt.EnclosedStmt;
 
@@ -18,8 +17,8 @@ public class Environment {
 
     private static Environment GLOBAL;
 
-    private static final Map<String, Map<String, List<FunDef>>> FUNCTIONS = new HashMap<>();
-    private static final Map<String, String> ALIAS = new HashMap<>();
+    private static final Map<Type, Map<String, List<FunDef>>> FUNCTIONS = new HashMap<>();
+    private static final Map<String, Type> ALIAS = new HashMap<>();
     private static final Map<String, Parameter[]> TYPES = new HashMap<>();
     private static final Map<String, List<String>> GROUPS = new HashMap<>();
 
@@ -40,7 +39,7 @@ public class Environment {
         GROUPS.clear();
     }
 
-    public static boolean hasFunction(String member, String name, String... types) {
+    public static boolean hasFunction(Type member, String name, Type... types) {
         if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
             final var functions = FUNCTIONS.get(member).get(name);
             for (final var fun : functions) {
@@ -64,16 +63,16 @@ public class Environment {
     public static FunDef createFunction(
             boolean constructor,
             String name,
-            String type,
+            Type type,
             Parameter[] params,
             String vararg,
-            String member,
+            Type member,
             EnclosedStmt body) {
 
         final var paramc = params == null ? 0 : params.length;
 
         final var parameters = new String[paramc];
-        final var paramTypes = new String[paramc];
+        final var paramTypes = new Type[paramc];
         for (int i = 0; i < paramc; i++) {
             parameters[i] = params[i].name;
             paramTypes[i] = params[i].type;
@@ -106,15 +105,15 @@ public class Environment {
     public static void registerFunction(
             boolean constructor,
             String name,
-            String type,
-            String[] params,
+            Type type,
+            Type[] params,
             String vararg,
-            String member,
+            Type member,
             IFunBody body) {
 
         final var paramc = params == null ? 0 : params.length;
 
-        final var parameters = new String[paramc];
+        final var parameters = new Type[paramc];
         for (int i = 0; i < paramc; i++)
             parameters[i] = params[i];
 
@@ -140,7 +139,7 @@ public class Environment {
                 .add(fun);
     }
 
-    public static FunDef getFunction(String member, String name, String... types) {
+    public static FunDef getFunction(Type member, String name, Type... types) {
         if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
             final var functions = FUNCTIONS.get(member).get(name);
             for (final var fun : functions) {
@@ -166,33 +165,33 @@ public class Environment {
     }
 
     public static Value getAndInvoke(Value member, String name, Value... args) {
-        final var types = new String[args == null ? 0 : args.length];
+        final var types = new Type[args == null ? 0 : args.length];
         for (int i = 0; i < types.length; i++)
             types[i] = args[i].getType();
 
         return getFunction(member != null ? member.getType() : null, name, types).invoke(member, args);
     }
 
-    public static boolean hasAlias(String type) {
-        return ALIAS.containsKey(type);
+    public static boolean hasAlias(String alias) {
+        return ALIAS.containsKey(alias);
     }
 
-    public static void createAlias(String alias, String type) {
-        if (hasAlias(type))
-            throw new CSawException("alias already defined for type '%s'", type);
+    public static void createAlias(String alias, Type type) {
+        if (hasAlias(alias))
+            throw new CSawException("alias '%s' already defined", alias);
         ALIAS.put(alias, type);
     }
 
-    public static String getAlias(String type) {
-        if (!hasAlias(type))
-            throw new CSawException("undefined alias for type '%s'", type);
-        return ALIAS.get(type);
+    public static Type getAlias(String alias) {
+        if (!hasAlias(alias))
+            throw new CSawException("undefined alias for type '%s'", alias);
+        return ALIAS.get(alias);
     }
 
-    public static String getOrigin(String type) {
-        if (!hasAlias(type))
+    public static Type getOrigin(Type type) {
+        if (!hasAlias(type.name))
             return type;
-        return getOrigin(getAlias(type));
+        return getOrigin(getAlias(type.name));
     }
 
     public static boolean hasType(String type) {
@@ -216,23 +215,23 @@ public class Environment {
             if (!hasAlias(type))
                 throw new CSawException("undefined type '%s'", type);
             else
-                return getType(getAlias(type));
+                return getType(getAlias(type).name);
         return TYPES.get(type);
     }
 
-    public static boolean isAliasFor(String type, String aliasFor) {
+    public static boolean isAliasFor(Type type, Type aliasFor) {
         return getOrigin(type).equals(getOrigin(aliasFor));
     }
 
-    public static boolean isAssignable(String type, String to) {
-        if (TYPE_ANY.equals(to) || TYPE_ANY.equals(type) || isAliasFor(type, to))
+    public static boolean isAssignable(Type type, Type to) {
+        if (Type.getAny().equals(to) /* || Type.ANY.equals(type) */ || isAliasFor(type, to))
             return true;
-        if (GROUPS.containsKey(to))
-            return GROUPS.get(to).contains(type);
+        if (GROUPS.containsKey(to.name))
+            return GROUPS.get(to.name).contains(type.name);
         return false;
     }
 
-    private final Map<String, Pair<String, Value>> mVariables = new HashMap<>();
+    private final Map<String, Pair<Type, Value>> mVariables = new HashMap<>();
     private String mPath;
 
     private Environment(String path) {
@@ -257,14 +256,14 @@ public class Environment {
         return mVariables.containsKey(id);
     }
 
-    public <V extends Value> V createVariable(String id, String type, V value) {
+    public <V extends Value> V createVariable(String id, Type type, V value) {
         if (hasVariable(id))
             throw new CSawException("variable '%s' already defined", id);
         mVariables.put(id, new Pair<>(type, value));
         return value;
     }
 
-    private Pair<String, Value> getVarEntry(String id) {
+    private Pair<Type, Value> getVarEntry(String id) {
         if (!hasVariable(id))
             throw new CSawException("undefined variable '%s'", id);
         return mVariables.get(id);

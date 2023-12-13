@@ -1,10 +1,5 @@
 package io.scriptor.java;
 
-import static io.scriptor.csaw.impl.Types.TYPE_ANY;
-import static io.scriptor.csaw.impl.Types.TYPE_CHR;
-import static io.scriptor.csaw.impl.Types.TYPE_LAMBDA;
-import static io.scriptor.csaw.impl.Types.TYPE_NUM;
-import static io.scriptor.csaw.impl.Types.TYPE_STR;
 import static io.scriptor.csaw.impl.interpreter.Environment.createAlias;
 import static io.scriptor.csaw.impl.interpreter.Environment.createType;
 import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
@@ -19,6 +14,7 @@ import java.util.Vector;
 import io.github.classgraph.ClassGraph;
 import io.scriptor.csaw.impl.CSawException;
 import io.scriptor.csaw.impl.Parameter;
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.Environment;
 import io.scriptor.csaw.impl.interpreter.IFunBody;
 import io.scriptor.csaw.impl.interpreter.value.ConstChr;
@@ -38,6 +34,7 @@ public class Collector {
         final var classes = result.getClassesWithAnnotation(CSawNative.class).loadClasses();
         for (final var cls : classes) {
             final var typename = cls.getAnnotation(CSawNative.class).value().trim();
+            final var type = Type.get(typename);
 
             final var fields = cls.getDeclaredFields();
             final List<Parameter> typefields = new Vector<>();
@@ -51,14 +48,14 @@ public class Collector {
                 typefields.add(field);
             }
             createType(null, typename, typefields.toArray(new Parameter[0]));
-            createAlias(cls.getName(), typename);
+            createAlias(cls.getName(), type);
 
             final var constructors = cls.getDeclaredConstructors();
             for (final var cnstr : constructors) {
                 if (!Modifier.isPublic(cnstr.getModifiers()))
                     continue;
 
-                final var params = new String[cnstr.getParameterCount() - (cnstr.isVarArgs() ? 1 : 0)];
+                final var params = new Type[cnstr.getParameterCount() - (cnstr.isVarArgs() ? 1 : 0)];
                 for (int i = 0; i < params.length; i++)
                     params[i] = getType(env, cnstr.getParameterTypes()[i]);
 
@@ -69,7 +66,7 @@ public class Collector {
                 registerFunction(
                         false,
                         typename,
-                        typename,
+                        type,
                         params,
                         cnstr.isVarArgs() ? "va" : null,
                         null,
@@ -81,7 +78,7 @@ public class Collector {
                 if (!Modifier.isPublic(mthd.getModifiers()))
                     continue;
 
-                final var params = new String[mthd.getParameterCount() - (mthd.isVarArgs() ? 1 : 0)];
+                final var params = new Type[mthd.getParameterCount() - (mthd.isVarArgs() ? 1 : 0)];
                 for (int i = 0; i < params.length; i++)
                     params[i] = getType(env, mthd.getParameterTypes()[i]);
 
@@ -99,7 +96,7 @@ public class Collector {
                         getType(env, mthd.getReturnType()),
                         params,
                         mthd.isVarArgs() ? "va" : null,
-                        Modifier.isStatic(mthd.getModifiers()) ? null : typename,
+                        Modifier.isStatic(mthd.getModifiers()) ? null : type,
                         body);
 
                 if (mthd.isAnnotationPresent(CSawAlias.class))
@@ -109,7 +106,7 @@ public class Collector {
                             getType(env, mthd.getReturnType()),
                             params,
                             mthd.isVarArgs() ? "va" : null,
-                            Modifier.isStatic(mthd.getModifiers()) ? null : typename,
+                            Modifier.isStatic(mthd.getModifiers()) ? null : type,
                             body);
             }
         }
@@ -132,28 +129,28 @@ public class Collector {
         return allArgs;
     }
 
-    private static String getType(Environment env, Class<?> cls) {
+    private static Type getType(Environment env, Class<?> cls) {
         if (cls.equals(Void.class) || cls.equals(void.class))
             return null;
 
         if (cls.equals(ConstNum.class))
-            return TYPE_NUM;
+            return Type.getNum();
 
         if (cls.equals(ConstChr.class))
-            return TYPE_CHR;
+            return Type.getChr();
 
         if (cls.equals(ConstStr.class))
-            return TYPE_STR;
+            return Type.getStr();
 
         if (cls.equals(ConstLambda.class))
-            return TYPE_LAMBDA;
+            return Type.getLambda();
 
         if (cls.equals(Value.class))
-            return TYPE_ANY;
+            return Type.getAny();
 
         if (!hasAlias(cls.getName()))
             throw new CSawException("unhandled class-to-type conversion for class '%s'", cls);
 
-        return getOrigin(cls.getName());
+        return getOrigin(Type.get(cls.getName()));
     }
 }

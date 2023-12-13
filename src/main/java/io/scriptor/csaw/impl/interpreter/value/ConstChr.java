@@ -1,6 +1,6 @@
 package io.scriptor.csaw.impl.interpreter.value;
 
-import static io.scriptor.csaw.impl.Types.TYPE_CHR;
+import io.scriptor.csaw.impl.Type;
 
 public class ConstChr extends Value {
 
@@ -19,8 +19,8 @@ public class ConstChr extends Value {
     }
 
     @Override
-    protected String type() {
-        return TYPE_CHR;
+    protected Type type() {
+        return Type.getChr();
     }
 
     @Override

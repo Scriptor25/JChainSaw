@@ -3,7 +3,7 @@ package io.scriptor.csaw.impl;
 public class Parameter {
 
     public String name;
-    public String type;
+    public Type type;
 
     @Override
     public String toString() {

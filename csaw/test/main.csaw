@@ -38,12 +38,9 @@ num step_i = 0;
         out("%n");
     }
 
-    list threads = list();
-    for (num i = 0; i < MAX_THREAD; i++) {
-        thrd t = thrd([]() multi());
-        threads.add(t);
-        t.start();
-    }
+    thrd[MAX_THREAD] threads;
+    for (num i = 0; i < MAX_THREAD; i++)
+        (threads[i] = thrd([](){ multi(); })).start();
 
     for (num i = 0; i < MAX_THREAD; i++)
         threads[i].join();

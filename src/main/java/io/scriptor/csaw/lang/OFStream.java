@@ -6,6 +6,7 @@ import static io.scriptor.java.ErrorUtil.handleVoid;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -38,8 +39,8 @@ public class OFStream extends Value {
     }
 
     @Override
-    protected String type() {
-        return "ofstream";
+    protected Type type() {
+        return Type.get("ofstream");
     }
 
     @Override

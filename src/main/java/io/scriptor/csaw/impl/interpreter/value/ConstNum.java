@@ -1,6 +1,6 @@
 package io.scriptor.csaw.impl.interpreter.value;
 
-import static io.scriptor.csaw.impl.Types.TYPE_NUM;
+import io.scriptor.csaw.impl.Type;
 
 public class ConstNum extends Value {
 
@@ -35,8 +35,8 @@ public class ConstNum extends Value {
     }
 
     @Override
-    protected String type() {
-        return TYPE_NUM;
+    protected Type type() {
+        return Type.getNum();
     }
 
     @Override

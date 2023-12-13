@@ -6,6 +6,7 @@ import static io.scriptor.java.ErrorUtil.handleVoid;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -35,8 +36,8 @@ public class IFStream extends Value {
     }
 
     @Override
-    protected String type() {
-        return "ifstream";
+    protected Type type() {
+        return Type.get("ifstream");
     }
 
     @Override

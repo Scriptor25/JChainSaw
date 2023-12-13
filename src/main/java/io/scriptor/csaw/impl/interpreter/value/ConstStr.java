@@ -1,6 +1,6 @@
 package io.scriptor.csaw.impl.interpreter.value;
 
-import static io.scriptor.csaw.impl.Types.TYPE_STR;
+import io.scriptor.csaw.impl.Type;
 
 public class ConstStr extends Value {
 
@@ -19,8 +19,8 @@ public class ConstStr extends Value {
     }
 
     @Override
-    protected String type() {
-        return TYPE_STR;
+    protected Type type() {
+        return Type.getStr();
     }
 
     @Override

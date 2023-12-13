@@ -2,6 +2,7 @@ package io.scriptor.csaw.lang;
 
 import static io.scriptor.java.ErrorUtil.handleVoid;
 
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
@@ -28,8 +29,8 @@ public class CSawThread extends Value {
     }
 
     @Override
-    protected String type() {
-        return "thrd";
+    protected Type type() {
+        return Type.get("thrd");
     }
 
     @Override

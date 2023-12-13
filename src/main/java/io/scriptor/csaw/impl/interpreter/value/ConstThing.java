@@ -4,12 +4,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.scriptor.csaw.impl.Pair;
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.Environment;
 
 public class ConstThing extends Value {
 
     private final String mType;
-    private final Map<String, Pair<String, Value>> mFields = new HashMap<>();
+    private final Map<String, Pair<Type, Value>> mFields = new HashMap<>();
 
     public ConstThing(Environment env, String type) {
         mType = type;
@@ -27,8 +28,8 @@ public class ConstThing extends Value {
     }
 
     @Override
-    protected String type() {
-        return mType;
+    protected Type type() {
+        return Type.get(mType);
     }
 
     @Override

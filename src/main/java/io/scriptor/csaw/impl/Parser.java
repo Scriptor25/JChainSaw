@@ -1,5 +1,6 @@
 package io.scriptor.csaw.impl;
 
+import static io.scriptor.csaw.impl.interpreter.Environment.getGlobal;
 import static io.scriptor.java.ErrorUtil.handle;
 import static io.scriptor.java.ErrorUtil.handleVoid;
 
@@ -16,6 +17,7 @@ import io.scriptor.csaw.impl.expr.ChrExpr;
 import io.scriptor.csaw.impl.expr.ConExpr;
 import io.scriptor.csaw.impl.expr.Expr;
 import io.scriptor.csaw.impl.expr.IdExpr;
+import io.scriptor.csaw.impl.expr.IndexExpr;
 import io.scriptor.csaw.impl.expr.LambdaExpr;
 import io.scriptor.csaw.impl.expr.MemExpr;
 import io.scriptor.csaw.impl.expr.NumExpr;
@@ -286,6 +288,21 @@ public class Parser {
         return mToken == null || mToken.type == TokenType.EOF;
     }
 
+    private Type nextType() {
+        return nextType(nextIndexExpr());
+    }
+
+    private Type nextType(Expr type) {
+        if (type instanceof IdExpr t)
+            return new Type(t.value);
+        if (type instanceof IndexExpr t) {
+            final var size = Interpreter.evaluate(getGlobal(), t.index).asNum().getInt();
+            return new Type.ArrayType(nextType(t.expr), size);
+        }
+
+        throw new CSawException("unsupported type expression");
+    }
+
     private Stmt nextStmt(boolean semicolon) {
 
         if (at("{"))
@@ -315,8 +332,7 @@ public class Parser {
         if (at("while"))
             return nextWhileStmt(semicolon);
 
-        var expr = nextExpr();
-
+        final var expr = nextExpr();
         final var stmt = nextVarStmt(expr, semicolon);
         if (stmt != null)
             return stmt;
@@ -348,8 +364,7 @@ public class Parser {
         stmt.alias = mToken.value;
         expectAndNext(TokenType.IDENTIFIER); // skip alias
         expectAndNext(":"); // skip :
-        stmt.origin = mToken.value;
-        expectAndNext(TokenType.IDENTIFIER); // skip origin
+        stmt.origin = nextType();
         if (!eof() && semicolon)
             expectAndNext(";"); // skip ;
 
@@ -399,11 +414,10 @@ public class Parser {
         }
 
         if (stmt.constructor) {
-            stmt.type = stmt.name;
+            stmt.type = new Type(stmt.name);
         } else if (at(":")) {
             next(); // skip :
-            stmt.type = mToken.value;
-            expectAndNext(TokenType.IDENTIFIER); // skip type
+            stmt.type = nextType();
         }
 
         if (at("(")) {
@@ -414,8 +428,7 @@ public class Parser {
                 param.name = mToken.value;
                 expectAndNext(TokenType.IDENTIFIER); // skip name
                 expectAndNext(":"); // skip :
-                param.type = mToken.value;
-                expectAndNext(TokenType.IDENTIFIER); // skip type
+                param.type = nextType();
                 parameters.add(param);
                 if (!at(")"))
                     expectAndNext(","); // skip ,
@@ -433,8 +446,7 @@ public class Parser {
         if (at("-")) {
             next(); // skip -
             expectAndNext(">"); // skip >
-            stmt.member = mToken.value;
-            expectAndNext(TokenType.IDENTIFIER); // skip member
+            stmt.member = nextType();
         }
 
         if (at(";")) {
@@ -514,8 +526,7 @@ public class Parser {
             param.name = mToken.value;
             expectAndNext(TokenType.IDENTIFIER); // skip name
             expectAndNext(":"); // skip :
-            param.type = mToken.value;
-            expectAndNext(TokenType.IDENTIFIER); // skip type
+            param.type = nextType();
             fields.add(param);
             if (!at("}"))
                 expectAndNext(","); // skip ,
@@ -540,9 +551,9 @@ public class Parser {
     }
 
     private VarStmt nextVarStmt(Expr type, boolean semicolon) {
-        if (type instanceof IdExpr && at(TokenType.IDENTIFIER)) {
+        if (type instanceof IdExpr || type instanceof IndexExpr && at(TokenType.IDENTIFIER)) {
             final var stmt = new VarStmt();
-            stmt.type = ((IdExpr) type).value;
+            stmt.type = nextType(type);
             stmt.name = mToken.value;
             expectAndNext(TokenType.IDENTIFIER); // skip name
 
@@ -690,7 +701,7 @@ public class Parser {
     }
 
     private Expr nextBinExprPro() {
-        var left = nextBinIndexExpr();
+        var left = nextCallExpr();
 
         while (at("*") || at("/") || at("%")) {
             var operator = mToken.value;
@@ -702,36 +713,15 @@ public class Parser {
                 continue;
             }
 
-            left = new BinExpr(left, nextBinIndexExpr(), operator);
+            left = new BinExpr(left, nextCallExpr(), operator);
         }
 
         return left;
     }
 
-    private Expr nextBinIndexExpr() {
-        var expr = nextCallExpr();
-
-        while (at("[")) {
-            next(); // skip [
-            final var index = nextExpr();
-            expectAndNext("]"); // skip ]
-            expr = new BinExpr(expr, index, "[]");
-
-            if (at("."))
-                expr = nextMemExpr(expr);
-
-            if (at("("))
-                expr = nextCallExpr(expr);
-        }
-
-        return expr;
-    }
-
     private Expr nextCallExpr() {
-        return nextCallExpr(nextMemExpr());
-    }
+        var expr = nextIndexExpr();
 
-    private Expr nextCallExpr(Expr expr) {
         while (at("(")) {
             next(); // skip (
             final List<Expr> arguments = new Vector<>();
@@ -743,6 +733,27 @@ public class Parser {
             expectAndNext(")"); // skip )
 
             expr = new CallExpr(expr, arguments.toArray(new Expr[0]));
+
+            if (at("["))
+                expr = nextIndexExpr(expr);
+
+            if (at("."))
+                expr = nextMemExpr(expr);
+        }
+
+        return expr;
+    }
+
+    private Expr nextIndexExpr() {
+        return nextIndexExpr(nextMemExpr());
+    }
+
+    private Expr nextIndexExpr(Expr expr) {
+        while (at("[")) {
+            next(); // skip [
+            final var index = nextExpr();
+            expectAndNext("]"); // skip ]
+            expr = new IndexExpr(expr, index);
 
             if (at("."))
                 expr = nextMemExpr(expr);
@@ -758,7 +769,8 @@ public class Parser {
     private Expr nextMemExpr(Expr expr) {
         while (at(".")) {
             next(); // skip .
-            expr = new MemExpr(expr, ((IdExpr) nextPrimExpr()).value);
+            expr = new MemExpr(expr, mToken.value);
+            expectAndNext(TokenType.IDENTIFIER);
         }
 
         return expr;
@@ -802,15 +814,15 @@ public class Parser {
             }
             case "-": {
                 next(); // skip -
-                return new UnExpr("-", nextBinIndexExpr());
+                return new UnExpr("-", nextCallExpr());
             }
             case "!": {
                 next(); // skip !
-                return new UnExpr("!", nextBinIndexExpr());
+                return new UnExpr("!", nextCallExpr());
             }
             case "~": {
                 next(); // skip ~
-                return new UnExpr("~", nextBinIndexExpr());
+                return new UnExpr("~", nextCallExpr());
             }
 
             case "[": { // lambda!
@@ -830,8 +842,7 @@ public class Parser {
                     param.name = mToken.value;
                     expectAndNext(TokenType.IDENTIFIER); // skip name
                     expectAndNext(":"); // skip :
-                    param.type = mToken.value;
-                    expectAndNext(TokenType.IDENTIFIER); // skip type
+                    param.type = nextType();
                     parameters.add(param);
                     if (!at(")"))
                         expectAndNext(","); // skip ,

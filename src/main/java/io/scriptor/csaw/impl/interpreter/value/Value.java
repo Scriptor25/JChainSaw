@@ -1,13 +1,12 @@
 package io.scriptor.csaw.impl.interpreter.value;
 
-import static io.scriptor.csaw.impl.Types.TYPE_CHR;
-import static io.scriptor.csaw.impl.Types.TYPE_NUM;
-import static io.scriptor.csaw.impl.Types.TYPE_STR;
 import static io.scriptor.csaw.impl.interpreter.Environment.getAndInvoke;
 import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
 import static io.scriptor.csaw.impl.interpreter.Environment.hasFunction;
 import static io.scriptor.csaw.impl.interpreter.Environment.hasType;
 
+import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.Type.ArrayType;
 import io.scriptor.csaw.impl.interpreter.Environment;
 
 public abstract class Value {
@@ -43,8 +42,8 @@ public abstract class Value {
         return this instanceof ConstLambda;
     }
 
-    public boolean sameType(Value value) {
-        return getClass().isInstance(value);
+    public boolean isRef() {
+        return this instanceof ValueRef;
     }
 
     public ConstNum asNum() {
@@ -67,13 +66,17 @@ public abstract class Value {
         return (ConstLambda) this;
     }
 
-    protected abstract String type();
+    public ValueRef asRef() {
+        return (ValueRef) this;
+    }
+
+    protected abstract Type type();
 
     protected abstract Object object();
 
     protected abstract String string();
 
-    public String getType() {
+    public Type getType() {
         return type();
     }
 
@@ -86,25 +89,26 @@ public abstract class Value {
         return string();
     }
 
-    public static Value makeValue(Environment env, String type, boolean onlyPrimitives, boolean dontConstruct) {
-        switch (getOrigin(type)) {
-            case TYPE_NUM:
-                return new ConstNum();
-            case TYPE_STR:
-                return new ConstStr();
-            case TYPE_CHR:
-                return new ConstChr();
-            default:
-                break;
-        }
+    public static Value makeValue(Environment env, Type type, boolean onlyPrimitives, boolean dontConstruct) {
+        final var origin = getOrigin(type);
 
-        if (onlyPrimitives || !hasType(getOrigin(type)))
+        if (origin instanceof ArrayType at)
+            return new ValueRef(at.size, at.type);
+
+        if (origin.equals(Type.getNum()))
+            return new ConstNum();
+        if (origin.equals(Type.getStr()))
+            return new ConstStr();
+        if (origin.equals(Type.getChr()))
+            return new ConstChr();
+
+        if (onlyPrimitives || !hasType(origin.name))
             return null;
 
-        if (!dontConstruct && hasFunction(null, type))
-            return getAndInvoke(null, type);
+        if (!dontConstruct && hasFunction(null, type.name))
+            return getAndInvoke(null, type.name);
 
-        return new ConstThing(env, type);
+        return new ConstThing(env, type.name);
     }
 
     public static Value binAnd(Environment env, Value left, Value right) {
@@ -226,10 +230,6 @@ public abstract class Value {
             return new ConstNum(left.asNum().getInt() ^ right.asNum().getInt());
 
         return getAndInvoke(null, "^", left, right);
-    }
-
-    public static Value index(Environment env, Value left, Value right) {
-        return getAndInvoke(left, "[]", right);
     }
 
     public static Value neg(Environment env, Value value) {

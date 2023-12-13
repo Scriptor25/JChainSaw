@@ -7,6 +7,7 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -66,8 +67,8 @@ public class CSawImg extends Value {
     }
 
     @Override
-    protected String type() {
-        return "img";
+    protected Type type() {
+        return Type.get("img");
     }
 
     @Override

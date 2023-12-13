@@ -4,8 +4,6 @@ import static io.scriptor.csaw.impl.interpreter.Environment.createAlias;
 import static io.scriptor.csaw.impl.interpreter.Environment.createFunction;
 import static io.scriptor.csaw.impl.interpreter.Environment.createType;
 import static io.scriptor.csaw.impl.interpreter.Environment.getAndInvoke;
-import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
-import static io.scriptor.csaw.impl.interpreter.Environment.hasFunction;
 import static io.scriptor.csaw.impl.interpreter.Environment.isAssignable;
 
 import java.io.File;
@@ -13,8 +11,8 @@ import java.io.FileInputStream;
 import java.util.Arrays;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.Pair;
 import io.scriptor.csaw.impl.Parser;
+import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.expr.AssignExpr;
 import io.scriptor.csaw.impl.expr.BinExpr;
 import io.scriptor.csaw.impl.expr.CallExpr;
@@ -22,6 +20,7 @@ import io.scriptor.csaw.impl.expr.ChrExpr;
 import io.scriptor.csaw.impl.expr.ConExpr;
 import io.scriptor.csaw.impl.expr.Expr;
 import io.scriptor.csaw.impl.expr.IdExpr;
+import io.scriptor.csaw.impl.expr.IndexExpr;
 import io.scriptor.csaw.impl.expr.LambdaExpr;
 import io.scriptor.csaw.impl.expr.MemExpr;
 import io.scriptor.csaw.impl.expr.NumExpr;
@@ -31,6 +30,7 @@ import io.scriptor.csaw.impl.interpreter.value.ConstChr;
 import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
+import io.scriptor.csaw.impl.interpreter.value.NamedValue;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.csaw.impl.stmt.AliasStmt;
 import io.scriptor.csaw.impl.stmt.EnclosedStmt;
@@ -153,8 +153,7 @@ public class Interpreter {
         var value = stmt.value == null ? null : evaluate(env, stmt.value);
 
         if (value != null && !isAssignable(value.getType(), stmt.type))
-            throw new CSawException(
-                    String.format("cannot assign value of type '%s' to type '%s'", value.getType(), stmt.type));
+            throw new CSawException("cannot assign value of type '%s' to type '%s'", value.getType(), stmt.type);
         else if (value == null)
             value = Value.makeValue(env, stmt.type, false, false);
 
@@ -186,6 +185,8 @@ public class Interpreter {
             return evaluate(env, (ConExpr) expr);
         if (expr instanceof IdExpr)
             return evaluate(env, (IdExpr) expr);
+        if (expr instanceof IndexExpr)
+            return evaluate(env, (IndexExpr) expr);
         if (expr instanceof LambdaExpr)
             return evaluate(env, (LambdaExpr) expr);
         if (expr instanceof MemExpr)
@@ -201,12 +202,16 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, AssignExpr expr) {
-        if (expr.object instanceof IdExpr)
-            return env.setVariable(((IdExpr) expr.object).value, evaluate(env, expr.value));
-        if (expr.object instanceof MemExpr) {
-            final var thing = evaluate(env, ((MemExpr) expr.object).object).asThing();
-            return thing.setField(((MemExpr) expr.object).member, evaluate(env, expr.value));
-        }
+        final var value = evaluate(env, expr.value);
+
+        if (expr.object instanceof IdExpr e)
+            return env.setVariable(e.value, value);
+
+        if (expr.object instanceof MemExpr e)
+            return evaluate(env, e.object).asThing().setField(e.member, value);
+
+        if (expr.object instanceof IndexExpr e)
+            return evaluate(env, e.expr).asRef().set(evaluate(env, e.index).asNum().getInt(), value);
 
         throw new CSawException("unsupported assign operation %s", expr);
     }
@@ -233,7 +238,6 @@ public class Interpreter {
             case "/" -> Value.div(env, left, right);
             case "%" -> Value.mod(env, left, right);
             case "^" -> Value.xor(env, left, right);
-            case "[]" -> Value.index(env, left, right);
 
             default -> throw new CSawException(
                     "operator '%s' not supported for types '%s' and '%s'",
@@ -245,7 +249,7 @@ public class Interpreter {
 
     public static Value evaluate(Environment env, CallExpr expr) {
         final var args = new Value[expr.arguments.length];
-        final var argTypes = new String[expr.arguments.length];
+        final var argTypes = new Type[expr.arguments.length];
         for (int i = 0; i < args.length; i++) {
             args[i] = evaluate(env, expr.arguments[i]);
             argTypes[i] = args[i].getType();
@@ -261,22 +265,13 @@ public class Interpreter {
             name = ((MemExpr) expr.function).member;
         }
 
-        final var mem = member != null ? getOrigin(member.getType()) : null;
-
         if (env.hasVariable(name)) {
             final var lambda = env.getVariable(name);
             if (lambda.isLambda())
                 return lambda.asLambda().invoke(args);
         }
 
-        if (hasFunction(mem, name, argTypes))
-            return getAndInvoke(member, name, args);
-
-        throw new CSawException(
-                "undefined call to '%s', member of '%s', arguments %s",
-                name,
-                member,
-                Arrays.toString(args));
+        return getAndInvoke(member, name, args);
     }
 
     public static Value evaluate(Environment env, ChrExpr expr) {
@@ -293,10 +288,20 @@ public class Interpreter {
         return env.getVariable(expr.value);
     }
 
+    public static Value evaluate(Environment env, IndexExpr expr) {
+        final var value = evaluate(env, expr.expr);
+        final var index = evaluate(env, expr.index);
+
+        if (value.isRef())
+            return value.asRef().get(index.asNum().getInt());
+
+        return getAndInvoke(value, "[]", index);
+    }
+
     public static Value evaluate(Environment env, LambdaExpr expr) {
         final var passed = Arrays.stream(expr.passed)
-                .map(e -> new Pair<>(e.value, evaluate(env, e)))
-                .toArray(n -> new Pair[n]);
+                .map(e -> new NamedValue(e.value, evaluate(env, e)))
+                .toArray(n -> new NamedValue[n]);
         return new ConstLambda(passed, expr.parameters, expr.body);
     }
 
