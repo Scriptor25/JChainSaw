@@ -42,23 +42,23 @@ public class CSawImg extends Value {
         return mData.getRGB(x.getInt(), y.getInt());
     }
 
-    public ConstNum getPixel(ConstNum x, ConstNum y) {
+    public ConstNum get(ConstNum x, ConstNum y) {
         return new ConstNum(getRGB(x, y));
     }
 
-    public ConstNum getRed(ConstNum x, ConstNum y) {
+    public ConstNum r(ConstNum x, ConstNum y) {
         return new ConstNum((getRGB(x, y) >> 16) & 0xff);
     }
 
-    public ConstNum getGreen(ConstNum x, ConstNum y) {
+    public ConstNum g(ConstNum x, ConstNum y) {
         return new ConstNum((getRGB(x, y) >> 8) & 0xff);
     }
 
-    public ConstNum getBlue(ConstNum x, ConstNum y) {
+    public ConstNum b(ConstNum x, ConstNum y) {
         return new ConstNum(getRGB(x, y) & 0xff);
     }
 
-    public void setPixel(ConstNum x, ConstNum y, ConstNum rgb) {
+    public void set(ConstNum x, ConstNum y, ConstNum rgb) {
         mData.setRGB(x.getInt(), y.getInt(), rgb.getInt());
     }
 

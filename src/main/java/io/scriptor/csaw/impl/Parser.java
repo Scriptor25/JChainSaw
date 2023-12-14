@@ -663,7 +663,7 @@ public class Parser {
             var operator = mToken.value;
 
             next(); // skip operator
-            if (at("=")) {
+            if (at(operator)) {
                 operator += mToken.value;
                 next(); // skip operator
             } else if (operator.equals("=")) {

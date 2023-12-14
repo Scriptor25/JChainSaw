@@ -243,6 +243,8 @@ public class Interpreter {
             case "/" -> Value.div(env, left, right);
             case "%" -> Value.mod(env, left, right);
             case "^" -> Value.xor(env, left, right);
+            case "<<" -> Value.sl(env, left, right);
+            case ">>" -> Value.sr(env, left, right);
 
             default -> throw new CSawException(
                     "operator '%s' not supported for types '%s' and '%s'",

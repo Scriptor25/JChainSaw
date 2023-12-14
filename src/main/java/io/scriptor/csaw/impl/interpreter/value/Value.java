@@ -232,6 +232,20 @@ public abstract class Value {
         return getAndInvoke(null, "^", left, right);
     }
 
+    public static Value sl(Environment env, Value left, Value right) {
+        if (left.isNum() && right.isNum())
+            return new ConstNum(left.asNum().getInt() << right.asNum().getInt());
+
+        return getAndInvoke(null, "<<", left, right);
+    }
+
+    public static Value sr(Environment env, Value left, Value right) {
+        if (left.isNum() && right.isNum())
+            return new ConstNum(left.asNum().getInt() >> right.asNum().getInt());
+
+        return getAndInvoke(null, ">>", left, right);
+    }
+
     public static Value neg(Environment env, Value value) {
         if (value.isNum())
             return new ConstNum(-value.asNum().get());

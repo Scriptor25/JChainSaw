@@ -1,4 +1,53 @@
-@main: num {
+thing: pool {
+    threads: thrd[10],
+    tasks: list,
+    worker: thrd,
+}
+
+$pool (tasks: list) {
+    my.tasks = tasks;
+    my.worker = thrd([my]() { while (my.work()); });
+}
+
+@work: num -> pool {
     
+}
+
+num W = 100;
+num H = 100;
+
+@random_color: num {
+    num r = floor(255.999 * random());
+    num g = floor(255.999 * random());
+    num b = floor(255.999 * random());
+
+    ret (255 & 255) << 24 | (r & 255) << 16 | (g & 255) << 8 | (b & 255);
+}
+
+@get_xy (i: num, xy: num[2]) {
+    xy[1] = floor(i / W);
+    xy[0] = (i - xy[1] * W);
+}
+
+@run (p: img, i: num) {
+    num[2] xy;
+    get_xy(i, xy);
+    p.set(xy[0], xy[1], random_color());
+}
+
+@main: num {
+
+    img p = img(W, H);
+
+    num c = W * H;
+    thrd[W * H] t;
+    for (num i = 0; i < c; i++)
+        (t[i] = thrd([p, i]() run(p, i))).start();
+    
+    for (num i = 0; i < c; i++)
+        t[i].join();
+
+    p.write("png", "output/out.png");
+
     ret 0;
 }
