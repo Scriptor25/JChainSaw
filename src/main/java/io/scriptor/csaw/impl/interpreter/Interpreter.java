@@ -210,8 +210,13 @@ public class Interpreter {
         if (expr.object instanceof MemExpr e)
             return evaluate(env, e.object).asThing().setField(e.member, value);
 
-        if (expr.object instanceof IndexExpr e)
-            return evaluate(env, e.expr).asRef().set(evaluate(env, e.index).asNum().getInt(), value);
+        if (expr.object instanceof IndexExpr e) {
+            final var ref = evaluate(env, e.expr);
+            final var idx = evaluate(env, e.index);
+            if (ref.isRef())
+                return ref.asRef().set(idx.asNum().getInt(), value);
+            return getAndInvoke(ref, "[]", idx, value);
+        }
 
         throw new CSawException("unsupported assign operation %s", expr);
     }

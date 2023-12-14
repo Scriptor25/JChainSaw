@@ -33,8 +33,10 @@ public class CSawList extends Value {
         mValues.add(value);
     }
 
-    public void set(ConstNum index, Value value) {
+    @CSawAlias("[]")
+    public Value set(ConstNum index, Value value) {
         mValues.set(index.getInt(), value);
+        return value;
     }
 
     public ConstNum size() {
