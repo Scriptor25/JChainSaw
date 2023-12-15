@@ -17,7 +17,7 @@ public class ValueRef extends Value {
         mValues = new Value[size];
         mType = type;
         for (int i = 0; i < size; i++)
-            mValues[i] = Value.makeValue(getGlobal(), type, true, false);
+            mValues[i] = Value.makeValue(getGlobal(), type, false, false);
     }
 
     public ValueRef(Value value) {

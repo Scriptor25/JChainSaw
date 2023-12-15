@@ -1,0 +1,42 @@
+thing: pool {
+    size: num,
+    threads: list,
+    tasks: list,
+    worker: thrd,
+}
+
+$pool (size: num, tasks: list) {
+    my.size = size;
+    my.tasks = tasks;
+    for (num i = 0; i < size; i++)
+        my.threads.add(thrd());
+    thrd t = thrd([my]() { while (my.work()); });
+    my.worker = t;
+    t.start();
+}
+
+@free: num -> pool {
+    while (1) ## wait for free thread
+        for (num i = 0; i < my.size; i++)
+            if (!my.threads[i].running())
+                ret i;
+}
+
+@work: num -> pool {
+    if (my.tasks.empty())
+        ret 0;
+    
+    num i = my.free();
+    thrd t = thrd(my.tasks.pop());
+    my.threads[i] = t;
+    t.start();
+
+    ret 1;
+}
+
+@join -> pool {
+    my.worker.join();
+    for (num i = 0; i < my.size; i++)
+        if (my.threads[i].alive())
+            my.threads[i].join();
+}

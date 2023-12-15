@@ -83,11 +83,11 @@ public class Type {
         return get("lambda");
     }
 
-    public static Type get(String name) {
+    public static synchronized Type get(String name) {
         return TYPES.computeIfAbsent(name, key -> new Type(key));
     }
 
-    public static ArrayType get(Type type, int size) {
+    public static synchronized ArrayType get(Type type, int size) {
         return ARRAY_TYPES.computeIfAbsent(type, key -> new ArrayType(key, size));
     }
 

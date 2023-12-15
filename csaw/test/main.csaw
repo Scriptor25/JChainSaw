@@ -6,11 +6,33 @@ thing: pool {
 
 $pool (tasks: list) {
     my.tasks = tasks;
-    my.worker = thrd([my]() { while (my.work()); });
+    thrd t = thrd([my]() { while (my.work()); });
+    my.worker = t;
+    t.start();
 }
 
 @work: num -> pool {
+    if (my.tasks.empty())
+        ret 0;
     
+    num i = 10;
+    num free = 0;
+    while (!free) ## wait for free thread
+        for (i = 0; i < 10 && !free; i++)
+            free = !my.threads[i].running();
+    
+    thrd t = thrd(my.tasks.pop());
+    my.threads[i] = t;
+    t.start();
+
+    ret 1;
+}
+
+@join -> pool {
+    my.worker.join();
+    for (num i = 0; i < 10; i++)
+        if (my.threads[i].alive())
+            my.threads[i].join();
 }
 
 num W = 100;
@@ -40,12 +62,13 @@ num H = 100;
     img p = img(W, H);
 
     num c = W * H;
-    thrd[W * H] t;
+    list tasks;
+
     for (num i = 0; i < c; i++)
-        (t[i] = thrd([p, i]() run(p, i))).start();
+        tasks.add([p, i]() run(p, i));
     
-    for (num i = 0; i < c; i++)
-        t[i].join();
+    pool t = pool(tasks);
+    t.join();
 
     p.write("png", "output/out.png");
 

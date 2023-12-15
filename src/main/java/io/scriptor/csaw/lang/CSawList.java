@@ -39,6 +39,16 @@ public class CSawList extends Value {
         return value;
     }
 
+    public Value pop() {
+        final var value = mValues.get(0);
+        mValues.remove(0);
+        return value;
+    }
+
+    public ConstNum empty() {
+        return new ConstNum(mValues.isEmpty());
+    }
+
     public ConstNum size() {
         return new ConstNum(mValues.size());
     }

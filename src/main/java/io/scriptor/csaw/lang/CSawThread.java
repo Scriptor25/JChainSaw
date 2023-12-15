@@ -4,6 +4,7 @@ import static io.scriptor.java.ErrorUtil.handleVoid;
 
 import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
@@ -11,6 +12,10 @@ import io.scriptor.java.CSawNative;
 public class CSawThread extends Value {
 
     private final Thread mThread;
+
+    public CSawThread() {
+        mThread = null;
+    }
 
     public CSawThread(ConstLambda function) {
         mThread = new Thread(() -> function.invoke(), "CSawThread");
@@ -26,6 +31,14 @@ public class CSawThread extends Value {
 
     public void stop() {
         mThread.interrupt();
+    }
+
+    public ConstNum alive() {
+        return new ConstNum(mThread != null && mThread.isAlive());
+    }
+
+    public ConstNum running()  {
+        return new ConstNum(mThread != null && !mThread.isInterrupted());
     }
 
     @Override

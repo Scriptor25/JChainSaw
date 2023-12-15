@@ -2,6 +2,8 @@ package io.scriptor.csaw.impl.interpreter.value;
 
 import static io.scriptor.csaw.impl.interpreter.Environment.getGlobal;
 
+import java.util.Arrays;
+
 import io.scriptor.csaw.impl.Parameter;
 import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.Environment;
@@ -56,7 +58,7 @@ public class ConstLambda extends Value {
 
     @Override
     protected String string() {
-        return null;
+        return String.format("{ lambda passed=%s }", Arrays.toString(mPassed));
     }
 
 }

@@ -255,7 +255,7 @@ public abstract class Value {
 
     public static Value not(Environment env, Value value) {
         if (value.isNum())
-            return new ConstNum(value.asNum().get() == 0.0);
+            return new ConstNum(!value.asNum().getBool());
 
         return getAndInvoke(value, "!");
     }

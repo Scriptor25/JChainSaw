@@ -305,6 +305,11 @@ public class Parser {
 
     private Stmt nextStmt(boolean semicolon) {
 
+        if (at(";")) {
+            next(); // skip ;
+            return null;
+        }
+
         if (at("{"))
             return nextEnclosedStmt();
 
@@ -663,7 +668,7 @@ public class Parser {
             var operator = mToken.value;
 
             next(); // skip operator
-            if (at(operator)) {
+            if (at(operator) || at("=")) {
                 operator += mToken.value;
                 next(); // skip operator
             } else if (operator.equals("=")) {

@@ -265,11 +265,13 @@ public class Interpreter {
         String name = null;
         Value member = null;
 
-        if (expr.function instanceof IdExpr)
-            name = ((IdExpr) expr.function).value;
-        else if (expr.function instanceof MemExpr) {
-            member = evaluate(env, ((MemExpr) expr.function).object);
-            name = ((MemExpr) expr.function).member;
+        if (expr.function instanceof IdExpr e)
+            name = e.value;
+        else if (expr.function instanceof MemExpr e) {
+            member = evaluate(env, e.object);
+            if (member == null)
+                throw new CSawException("failed to evaluate object of member expression");
+            name = e.member;
         }
 
         if (env.hasVariable(name)) {
