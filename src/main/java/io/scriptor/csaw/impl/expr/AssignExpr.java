@@ -11,6 +11,16 @@ public class AssignExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return false;
+    }
+
+    @Override
+    public Expr makeConstant() {
+        return new AssignExpr(object.makeConstant(), value.makeConstant());
+    }
+
+    @Override
     public String toString() {
         return String.format("%s = %s", object, value);
     }

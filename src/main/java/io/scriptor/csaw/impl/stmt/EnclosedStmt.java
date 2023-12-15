@@ -2,7 +2,7 @@ package io.scriptor.csaw.impl.stmt;
 
 public class EnclosedStmt extends Stmt {
 
-    public Stmt[] body;
+    public final Stmt[] body;
 
     public EnclosedStmt(Stmt[] body) {
         this.body = body;

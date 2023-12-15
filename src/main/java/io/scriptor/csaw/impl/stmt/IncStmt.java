@@ -2,7 +2,11 @@ package io.scriptor.csaw.impl.stmt;
 
 public class IncStmt extends Stmt {
 
-    public String path;
+    public final String path;
+
+    public IncStmt(String path) {
+        this.path = path;
+    }
 
     @Override
     public String toString() {

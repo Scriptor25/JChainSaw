@@ -13,6 +13,16 @@ public class NumExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return true;
+    }
+
+    @Override
+    public Expr makeConstant() {
+        return new ConstExpr(this);
+    }
+
+    @Override
     public String toString() {
         return Double.toString(value);
     }

@@ -47,19 +47,18 @@ $camera {
     img output = img(my.image_width, my.image_height);
 
     list tasks;
-
     for (num j = 0; j < my.image_height; j++) {
-        printf("\rScanlines remaining: %d ", my.image_height - j);
-        for (num i = 0; i < my.image_width; i++) {
-            tasks.add([my, i, j]() {
+        tasks.add([my, world, output, j]() {
+            printf("Scanline %d of %d%n", j, my.image_height);
+            for (num i = 0; i < my.image_width; i++) {
                 color pixel_color = color(0, 0, 0);
                 for (num sample = 0; sample < my.samples_per_pixel; sample++) {
                     ray r = my.get_ray(i, j);
                     pixel_color += my.ray_color(r, my.max_depth, world);
                 }
                 write_color(output, i, j, pixel_color, my.samples_per_pixel);
-            });
-        }
+            }
+        });
     }
 
     pool p = pool(12, tasks);

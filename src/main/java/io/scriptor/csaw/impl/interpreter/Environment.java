@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 import io.scriptor.csaw.impl.CSawException;
 import io.scriptor.csaw.impl.Pair;
@@ -17,10 +18,10 @@ public class Environment {
 
     private static Environment GLOBAL;
 
-    private static final Map<Type, Map<String, List<FunDef>>> FUNCTIONS = new HashMap<>();
-    private static final Map<String, Type> ALIAS = new HashMap<>();
-    private static final Map<String, Parameter[]> TYPES = new HashMap<>();
-    private static final Map<String, List<String>> GROUPS = new HashMap<>();
+    private static final Map<Type, Map<String, List<FunDef>>> FUNCTIONS = new ConcurrentHashMap<>();
+    private static final Map<String, Type> ALIAS = new ConcurrentHashMap<>();
+    private static final Map<String, Parameter[]> THINGS = new ConcurrentHashMap<>();
+    private static final Map<String, List<String>> GROUPS = new ConcurrentHashMap<>();
 
     public static Environment initGlobal(String path) {
         return GLOBAL = new Environment(path);
@@ -35,7 +36,7 @@ public class Environment {
 
         FUNCTIONS.clear();
         ALIAS.clear();
-        TYPES.clear();
+        THINGS.clear();
         GROUPS.clear();
     }
 
@@ -69,11 +70,9 @@ public class Environment {
             Type member,
             EnclosedStmt body) {
 
-        final var paramc = params == null ? 0 : params.length;
-
-        final var parameters = new String[paramc];
-        final var paramTypes = new Type[paramc];
-        for (int i = 0; i < paramc; i++) {
+        final var parameters = new String[params.length];
+        final var paramTypes = new Type[params.length];
+        for (int i = 0; i < params.length; i++) {
             parameters[i] = params[i].name;
             paramTypes[i] = params[i].type;
         }
@@ -111,10 +110,8 @@ public class Environment {
             Type member,
             IFunBody body) {
 
-        final var paramc = params == null ? 0 : params.length;
-
-        final var parameters = new Type[paramc];
-        for (int i = 0; i < paramc; i++)
+        final var parameters = new Type[params.length];
+        for (int i = 0; i < params.length; i++)
             parameters[i] = params[i];
 
         if (hasFunction(member, name, parameters))
@@ -165,11 +162,11 @@ public class Environment {
     }
 
     public static Value getAndInvoke(Value member, String name, Value... args) {
-        final var types = new Type[args == null ? 0 : args.length];
+        final var types = new Type[args.length];
         for (int i = 0; i < types.length; i++)
             types[i] = args[i].getType();
 
-        return getFunction(member != null ? member.getType() : null, name, types).invoke(member, args);
+        return getFunction(member.getType(), name, types).invoke(member, args);
     }
 
     public static boolean hasAlias(String alias) {
@@ -194,29 +191,29 @@ public class Environment {
         return getOrigin(getAlias(type.name));
     }
 
-    public static boolean hasType(String type) {
-        return TYPES.containsKey(type);
+    public static boolean hasThing(String name) {
+        return THINGS.containsKey(name);
     }
 
-    public static void createType(String group, String name, Parameter[] fields) {
-        if (hasType(name)) {
-            if (getType(name) != null) // type is not opaque
+    public static void createThing(String group, String name, Parameter[] fields) {
+        if (hasThing(name)) {
+            if (getThing(name) != null) // type is not opaque
                 throw new CSawException("cannot redefine non-opaque type '%s'", name);
-            TYPES.put(name, fields);
+            THINGS.put(name, fields);
             return;
         }
 
-        TYPES.put(name, fields);
+        THINGS.put(name, fields);
         GROUPS.computeIfAbsent(group, key -> new Vector<>()).add(name);
     }
 
-    public static Parameter[] getType(String type) {
-        if (!hasType(type))
-            if (!hasAlias(type))
-                throw new CSawException("undefined type '%s'", type);
+    public static Parameter[] getThing(String name) {
+        if (!hasThing(name))
+            if (!hasAlias(name))
+                throw new CSawException("undefined type '%s'", name);
             else
-                return getType(getAlias(type).name);
-        return TYPES.get(type);
+                return getThing(getAlias(name).name);
+        return THINGS.get(name);
     }
 
     public static boolean isAliasFor(Type type, Type aliasFor) {

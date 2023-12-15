@@ -28,7 +28,7 @@ public class OFStream extends Value {
     }
 
     public void write(ConstStr fmt, Value... args) {
-        final var objArgs = new Object[args == null ? 0 : args.length];
+        final var objArgs = new Object[args.length];
         for (int i = 0; i < objArgs.length; i++)
             objArgs[i] = args[i].getObject();
         handleVoid(() -> mWriter.write(String.format(fmt.get(), objArgs)));

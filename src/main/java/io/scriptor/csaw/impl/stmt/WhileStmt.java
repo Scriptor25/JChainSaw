@@ -4,8 +4,13 @@ import io.scriptor.csaw.impl.expr.Expr;
 
 public class WhileStmt extends Stmt {
 
-    public Expr condition;
-    public Stmt body;
+    public final Expr condition;
+    public final Stmt body;
+
+    public WhileStmt(Expr condition, Stmt body) {
+        this.condition = condition;
+        this.body = body;
+    }
 
     @Override
     public String toString() {

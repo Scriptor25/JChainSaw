@@ -11,6 +11,16 @@ public class MemExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return false;
+    }
+
+    @Override
+    public Expr makeConstant() {
+        return new MemExpr(object.makeConstant(), member);
+    }
+
+    @Override
     public String toString() {
         return String.format("%s.%s", object, member);
     }

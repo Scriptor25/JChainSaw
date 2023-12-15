@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Vector;
 
 import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.value.ConstNull;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -45,7 +46,7 @@ public class CSawList extends Value {
         return value;
     }
 
-    public ConstNum empty() {
+    public ConstNum isEmpty() {
         return new ConstNum(mValues.isEmpty());
     }
 
@@ -59,8 +60,8 @@ public class CSawList extends Value {
 
     public CSawList sort(ConstStr comparator) {
         final var list = new CSawList(mValues);
-        final var cmp = getFunction(null, comparator.get(), Type.getAny(), Type.getAny());
-        list.mValues.sort((v1, v2) -> cmp.invoke(null, v1, v2).asNum().getInt());
+        final var cmp = getFunction(Type.getNull(), comparator.get(), Type.getAny(), Type.getAny());
+        list.mValues.sort((v1, v2) -> cmp.invoke(new ConstNull(), v1, v2).asNum().getInt());
         return list;
     }
 

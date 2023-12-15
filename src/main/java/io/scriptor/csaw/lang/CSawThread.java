@@ -6,6 +6,7 @@ import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.Value;
+import io.scriptor.java.CSawAlias;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("thrd")
@@ -33,12 +34,17 @@ public class CSawThread extends Value {
         mThread.interrupt();
     }
 
-    public ConstNum alive() {
-        return new ConstNum(mThread != null && mThread.isAlive());
+    @CSawAlias("!")
+    public ConstNum isEmpty() {
+        return new ConstNum(mThread == null);
     }
 
-    public ConstNum running()  {
-        return new ConstNum(mThread != null && !mThread.isInterrupted());
+    public ConstNum isAlive() {
+        return new ConstNum(mThread.isAlive());
+    }
+
+    public ConstNum isInterrupted() {
+        return new ConstNum(mThread.isInterrupted());
     }
 
     @Override

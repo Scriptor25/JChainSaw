@@ -18,6 +18,16 @@ public class LambdaExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return false;
+    }
+
+    @Override
+    public Expr makeConstant() {
+        return this;
+    }
+
+    @Override
     public String toString() {
         return String.format("%s%s %s", Arrays.toString(passed), Arrays.toString(parameters), body);
     }

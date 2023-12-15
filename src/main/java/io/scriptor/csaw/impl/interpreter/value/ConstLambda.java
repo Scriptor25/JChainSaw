@@ -39,11 +39,7 @@ public class ConstLambda extends Value {
         for (int i = 0; i < mParameters.length; i++)
             env.createVariable(mParameters[i].name, mParameters[i].type, args[i]);
 
-        final var value = Interpreter.evaluate(env, mBody);
-        if (value != null)
-            value.isReturn(false);
-
-        return value;
+        return Interpreter.evaluate(env, mBody).isReturn(false);
     }
 
     @Override

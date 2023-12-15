@@ -1,7 +1,7 @@
 package io.scriptor.csaw.impl;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Type {
 
@@ -39,6 +39,10 @@ public class Type {
         this.name = name;
     }
 
+    public boolean isNull() {
+        return name.isEmpty();
+    }
+
     @Override
     public String toString() {
         return name;
@@ -60,8 +64,12 @@ public class Type {
         return name.hashCode();
     }
 
-    private static final Map<String, Type> TYPES = new HashMap<>();
-    private static final Map<Type, ArrayType> ARRAY_TYPES = new HashMap<>();
+    private static final Map<String, Type> TYPES = new ConcurrentHashMap<>();
+    private static final Map<Type, ArrayType> ARRAY_TYPES = new ConcurrentHashMap<>();
+
+    public static Type getNull() {
+        return get("");
+    }
 
     public static Type getAny() {
         return get("any");
@@ -83,11 +91,11 @@ public class Type {
         return get("lambda");
     }
 
-    public static synchronized Type get(String name) {
+    public static Type get(String name) {
         return TYPES.computeIfAbsent(name, key -> new Type(key));
     }
 
-    public static synchronized ArrayType get(Type type, int size) {
+    public static ArrayType get(Type type, int size) {
         return ARRAY_TYPES.computeIfAbsent(type, key -> new ArrayType(key, size));
     }
 

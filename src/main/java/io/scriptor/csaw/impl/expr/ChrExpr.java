@@ -9,6 +9,16 @@ public class ChrExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return true;
+    }
+
+    @Override
+    public Expr makeConstant() {
+        return new ConstExpr(this);
+    }
+
+    @Override
     public String toString() {
         return String.format("'%c'", value);
     }

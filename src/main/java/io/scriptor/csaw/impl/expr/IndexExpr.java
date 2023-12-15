@@ -11,6 +11,16 @@ public class IndexExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return false;
+    }
+
+    @Override
+    public Expr makeConstant() {
+        return new IndexExpr(expr.makeConstant(), index.makeConstant());
+    }
+
+    @Override
     public String toString() {
         return String.format("%s[%s]", expr, index);
     }

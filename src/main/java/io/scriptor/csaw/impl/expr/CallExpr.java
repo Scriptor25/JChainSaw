@@ -11,6 +11,19 @@ public class CallExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return false;
+    }
+
+    @Override
+    public Expr makeConstant() {
+        final var args = new Expr[arguments.length];
+        for (int i = 0; i < args.length; i++)
+            args[i] = arguments[i].makeConstant();
+        return new CallExpr(function.makeConstant(), args);
+    }
+
+    @Override
     public String toString() {
         final var builder = new StringBuilder();
         for (int i = 0; i < arguments.length; i++) {

@@ -1,7 +1,7 @@
 package io.scriptor.java;
 
 import static io.scriptor.csaw.impl.interpreter.Environment.createAlias;
-import static io.scriptor.csaw.impl.interpreter.Environment.createType;
+import static io.scriptor.csaw.impl.interpreter.Environment.createThing;
 import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
 import static io.scriptor.csaw.impl.interpreter.Environment.hasAlias;
 import static io.scriptor.csaw.impl.interpreter.Environment.registerFunction;
@@ -47,7 +47,7 @@ public class Collector {
                 field.type = getType(env, fld.getType());
                 typefields.add(field);
             }
-            createType(null, typename, typefields.toArray(new Parameter[0]));
+            createThing("", typename, typefields.toArray(new Parameter[0]));
             createAlias(cls.getName(), type);
 
             final var constructors = cls.getDeclaredConstructors();
@@ -69,7 +69,7 @@ public class Collector {
                         type,
                         params,
                         cnstr.isVarArgs() ? "va" : null,
-                        null,
+                        Type.getNull(),
                         body);
             }
 
@@ -96,7 +96,7 @@ public class Collector {
                         getType(env, mthd.getReturnType()),
                         params,
                         mthd.isVarArgs() ? "va" : null,
-                        Modifier.isStatic(mthd.getModifiers()) ? null : type,
+                        Modifier.isStatic(mthd.getModifiers()) ? Type.getNull() : type,
                         body);
 
                 if (mthd.isAnnotationPresent(CSawAlias.class))
@@ -106,7 +106,7 @@ public class Collector {
                             getType(env, mthd.getReturnType()),
                             params,
                             mthd.isVarArgs() ? "va" : null,
-                            Modifier.isStatic(mthd.getModifiers()) ? null : type,
+                            Modifier.isStatic(mthd.getModifiers()) ? Type.getNull() : type,
                             body);
             }
         }
@@ -131,7 +131,7 @@ public class Collector {
 
     private static Type getType(Environment env, Class<?> cls) {
         if (cls.equals(Void.class) || cls.equals(void.class))
-            return null;
+            return Type.getNull();
 
         if (cls.equals(ConstNum.class))
             return Type.getNum();

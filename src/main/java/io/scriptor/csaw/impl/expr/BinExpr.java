@@ -13,6 +13,18 @@ public class BinExpr extends Expr {
     }
 
     @Override
+    public boolean isConstant() {
+        return left.isConstant() && right.isConstant();
+    }
+
+    @Override
+    public Expr makeConstant() {
+        if (isConstant())
+            return new ConstExpr(this);
+        return ConstExpr.make(new BinExpr(left.makeConstant(), right.makeConstant(), operator));
+    }
+
+    @Override
     public String toString() {
         return String.format("%s %s %s", left, operator, right);
     }

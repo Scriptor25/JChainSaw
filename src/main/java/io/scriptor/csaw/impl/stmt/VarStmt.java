@@ -5,9 +5,15 @@ import io.scriptor.csaw.impl.expr.Expr;
 
 public class VarStmt extends Stmt {
 
-    public Type type;
-    public String name;
-    public Expr value;
+    public final Type type;
+    public final String name;
+    public final Expr value;
+
+    public VarStmt(Type type, String name, Expr value) {
+        this.type = type;
+        this.name = name;
+        this.value = value;
+    }
 
     @Override
     public String toString() {

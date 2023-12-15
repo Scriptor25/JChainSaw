@@ -14,7 +14,7 @@ public class ConstThing extends Value {
 
     public ConstThing(Environment env, String type) {
         mType = type;
-        for (final var field : Environment.getType(type))
+        for (final var field : Environment.getThing(type))
             mFields.put(field.name, new Pair<>(field.type, Value.makeValue(env, field.type, true, false)));
     }
 

@@ -4,8 +4,13 @@ import io.scriptor.csaw.impl.Type;
 
 public class AliasStmt extends Stmt {
 
-    public String alias;
-    public Type origin;
+    public final String alias;
+    public final Type origin;
+
+    public AliasStmt(String alias, Type origin) {
+        this.alias = alias;
+        this.origin = origin;
+    }
 
     @Override
     public String toString() {

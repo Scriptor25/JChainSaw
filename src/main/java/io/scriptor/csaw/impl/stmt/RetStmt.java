@@ -4,7 +4,11 @@ import io.scriptor.csaw.impl.expr.Expr;
 
 public class RetStmt extends Stmt {
 
-    public Expr value;
+    public final Expr value;
+
+    public RetStmt(Expr value) {
+        this.value = value;
+    }
 
     @Override
     public String toString() {

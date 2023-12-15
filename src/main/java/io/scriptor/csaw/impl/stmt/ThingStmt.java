@@ -4,9 +4,15 @@ import io.scriptor.csaw.impl.Parameter;
 
 public class ThingStmt extends Stmt {
 
-    public String name;
-    public String group;
-    public Parameter[] fields;
+    public final String name;
+    public final String group;
+    public final Parameter[] fields;
+
+    public ThingStmt(String name, String group, Parameter[] fields) {
+        this.name = name;
+        this.group = group;
+        this.fields = fields;
+    }
 
     @Override
     public String toString() {

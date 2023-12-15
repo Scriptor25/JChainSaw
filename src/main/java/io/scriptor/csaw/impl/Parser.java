@@ -84,6 +84,7 @@ public class Parser {
         parser.next();
         while (!parser.eof()) {
             final var stmt = parser.nextStmt(true);
+            // System.out.println(stmt);
             Interpreter.evaluate(env, stmt);
         }
     }
@@ -296,6 +297,8 @@ public class Parser {
         if (type instanceof IdExpr t)
             return new Type(t.value);
         if (type instanceof IndexExpr t) {
+            if (!t.index.isConstant())
+                throw new CSawException("cannot pre-evaluate non-constant expression!");
             final var size = Interpreter.evaluate(getGlobal(), t.index).asNum().getInt();
             return new Type.ArrayType(nextType(t.expr), size);
         }
@@ -352,81 +355,86 @@ public class Parser {
         expectAndNext("{"); // skip {
 
         final List<Stmt> enclosed = new Vector<>();
-        while (!eof() && !at("}")) {
-            final var stmt = nextStmt(true);
-            if (stmt != null)
-                enclosed.add(stmt);
-        }
+        while (!eof() && !at("}"))
+            enclosed.add(nextStmt(true));
         expectAndNext("}"); // skip }
 
         return new EnclosedStmt(enclosed.toArray(new Stmt[0]));
     }
 
     private AliasStmt nextAliasStmt(boolean semicolon) {
-        final var stmt = new AliasStmt();
+        String alias;
+        Type origin;
 
         expectAndNext("alias"); // skip "alias"
-        stmt.alias = mToken.value;
+        alias = mToken.value;
         expectAndNext(TokenType.IDENTIFIER); // skip alias
         expectAndNext(":"); // skip :
-        stmt.origin = nextType();
+        origin = nextType();
         if (!eof() && semicolon)
             expectAndNext(";"); // skip ;
 
-        return stmt;
+        return new AliasStmt(alias, origin);
     }
 
     private ForStmt nextForStmt(boolean semicolon) {
-        final var stmt = new ForStmt();
+        Stmt begin = null, loop = null;
+        Expr condition;
+        Stmt body;
 
         expectAndNext("for"); // skip "for"
         expectAndNext("("); // skip (
         if (!at(";"))
-            stmt.begin = nextStmt(true);
+            begin = nextStmt(true);
         else
             next(); // skip ;
-        stmt.condition = nextExpr();
+        condition = nextExpr();
         expectAndNext(";"); // skip ;
         if (!at(")"))
-            stmt.loop = nextStmt(false);
+            loop = nextStmt(false);
         expectAndNext(")"); // skip )
 
-        stmt.body = nextStmt(semicolon);
+        body = nextStmt(semicolon);
 
-        return stmt;
+        return new ForStmt(begin, condition, loop, body);
     }
 
     private FunStmt nextFunStmt(boolean semicolon) {
-        final var stmt = new FunStmt();
 
-        stmt.constructor = at("$");
-        if (stmt.constructor)
+        boolean constructor;
+        String name, vararg = null;
+        Type type = Type.getNull(), member = Type.getNull();
+        Parameter[] parameters = new Parameter[0];
+        EnclosedStmt body = null;
+
+        constructor = at("$");
+        if (constructor)
             next(); // skip $
         else
             expectAndNext("@"); // skip @
 
         if (at("(")) { // override operator
             next(); // skip (
-            stmt.name = "";
+            name = "";
             while (!eof() && !at(")")) { // at least one character
-                stmt.name += mToken.value;
+                name += mToken.value;
                 expectAndNext(TokenType.OPERATOR); // skip operator
             }
             expectAndNext(")"); // skip )
         } else {
-            stmt.name = mToken.value;
+            name = mToken.value;
             expectAndNext(TokenType.IDENTIFIER); // skip name
         }
 
-        if (stmt.constructor) {
-            stmt.type = new Type(stmt.name);
+        if (constructor) {
+            type = new Type(name);
         } else if (at(":")) {
             next(); // skip :
-            stmt.type = nextType();
+            type = nextType();
         }
 
         if (at("(")) {
-            final List<Parameter> parameters = new Vector<>();
+            final List<Parameter> params = new Vector<>();
             next(); // skip (
             while (!eof() && !at(")")) {
                 final var param = new Parameter();
@@ -434,97 +442,100 @@ public class Parser {
                 expectAndNext(TokenType.IDENTIFIER); // skip name
                 expectAndNext(":"); // skip :
                 param.type = nextType();
-                parameters.add(param);
+                params.add(param);
                 if (!at(")"))
                     expectAndNext(","); // skip ,
             }
             expectAndNext(")"); // skip )
-            stmt.parameters = parameters.toArray(new Parameter[0]);
+            parameters = params.toArray(new Parameter[0]);
         }
 
         if (at("$")) {
             next(); // skip $
-            stmt.vararg = mToken.value;
+            vararg = mToken.value;
             expectAndNext(TokenType.IDENTIFIER); // skip vararg name
         }
 
         if (at("-")) {
             next(); // skip -
             expectAndNext(">"); // skip >
-            stmt.member = nextType();
+            member = nextType();
         }
 
         if (at(";")) {
             next(); // skip ;
-            return stmt;
+            return new FunStmt(constructor, name, type, parameters, vararg, member, body);
         }
 
-        stmt.body = nextEnclosedStmt();
+        body = nextEnclosedStmt();
 
-        return stmt;
+        return new FunStmt(constructor, name, type, parameters, vararg, member, body);
     }
 
     private IfStmt nextIfStmt(boolean semicolon) {
-        final var stmt = new IfStmt();
+        Expr condition;
+        Stmt thenBody, elseBody = null;
 
         expectAndNext("if"); // skip "if"
         expectAndNext("("); // skip (
-        stmt.condition = nextExpr();
+        condition = nextExpr();
         expectAndNext(")"); // skip )
 
-        stmt.thenBody = nextStmt(semicolon);
+        thenBody = nextStmt(semicolon);
 
         if (at("else")) {
             next(); // skip "else"
-            stmt.elseBody = nextStmt(semicolon);
+            elseBody = nextStmt(semicolon);
         }
 
-        return stmt;
+        return new IfStmt(condition, thenBody, elseBody);
     }
 
     private IncStmt nextIncStmt(boolean semicolon) {
-        final var stmt = new IncStmt();
+        String path;
 
         expectAndNext("inc"); // skip "inc"
-        stmt.path = mToken.value;
+        path = mToken.value;
         expectAndNext(TokenType.STRING); // skip path
         if (!eof() && semicolon)
             expectAndNext(";"); // skip ;
 
-        return stmt;
+        return new IncStmt(path);
     }
 
     private RetStmt nextRetStmt(boolean semicolon) {
-        final var stmt = new RetStmt();
+        Expr value = null;
 
         expectAndNext("ret"); // skip "ret"
-        stmt.value = nextExpr();
+        if (!at(";"))
+            value = nextExpr();
         if (!eof() && semicolon)
             expectAndNext(";"); // skip ;
 
-        return stmt;
+        return new RetStmt(value);
     }
 
     private ThingStmt nextThingStmt(boolean semicolon) {
-        final var stmt = new ThingStmt();
+        String name, group = "";
+        Parameter[] fields = null;
 
         expectAndNext("thing"); // skip "thing"
         expectAndNext(":"); // skip :
-        stmt.name = mToken.value;
+        name = mToken.value;
         expectAndNext(TokenType.IDENTIFIER); // skip name
 
         if (at(":")) {
             next(); // skip :
-            stmt.group = mToken.value;
+            group = mToken.value;
             expectAndNext(TokenType.IDENTIFIER);
         }
 
         if (at(";")) {
             next(); // skip ;
-            return stmt;
+            return new ThingStmt(name, group, fields);
         }
 
-        final List<Parameter> fields = new Vector<>();
+        final List<Parameter> flds = new Vector<>();
         expectAndNext("{"); // skip {
         while (!eof() && !at("}")) {
             final var param = new Parameter();
@@ -532,55 +543,60 @@ public class Parser {
             expectAndNext(TokenType.IDENTIFIER); // skip name
             expectAndNext(":"); // skip :
             param.type = nextType();
-            fields.add(param);
+            flds.add(param);
             if (!at("}"))
                 expectAndNext(","); // skip ,
         }
         expectAndNext("}"); // skip }
-        stmt.fields = fields.toArray(new Parameter[0]);
+        fields = flds.toArray(new Parameter[0]);
 
-        return stmt;
+        return new ThingStmt(name, group, fields);
     }
 
     private WhileStmt nextWhileStmt(boolean semicolon) {
-        final var stmt = new WhileStmt();
+        Expr condition;
+        Stmt body;
 
         expectAndNext("while"); // skip "while"
         expectAndNext("("); // skip (
-        stmt.condition = nextExpr();
+        condition = nextExpr();
         expectAndNext(")"); // skip )
 
-        stmt.body = nextStmt(semicolon);
+        body = nextStmt(semicolon);
 
-        return stmt;
+        return new WhileStmt(condition, body);
     }
 
-    private VarStmt nextVarStmt(Expr type, boolean semicolon) {
-        if ((type instanceof IdExpr || type instanceof IndexExpr) && at(TokenType.IDENTIFIER)) {
-            final var stmt = new VarStmt();
-            stmt.type = nextType(type);
-            stmt.name = mToken.value;
+    private VarStmt nextVarStmt(Expr expr, boolean semicolon) {
+        if ((expr instanceof IdExpr || expr instanceof IndexExpr) && at(TokenType.IDENTIFIER)) {
+
+            Type type;
+            String name;
+            Expr value = null;
+
+            type = nextType(expr);
+            name = mToken.value;
             expectAndNext(TokenType.IDENTIFIER); // skip name
 
             if (at(";")) {
                 next();
-                return stmt;
+                return new VarStmt(type, name, value);
             }
 
             expectAndNext("="); // skip =
 
-            stmt.value = nextExpr();
+            value = nextExpr();
             if (!eof() && semicolon)
                 expectAndNext(";"); // skip ;
 
-            return stmt;
+            return new VarStmt(type, name, value);
         }
 
         return null;
     }
 
     private Expr nextExpr() {
-        return nextConExpr();
+        return nextConExpr().makeConstant();
     }
 
     private Expr nextConExpr() {
@@ -783,7 +799,7 @@ public class Parser {
 
     private Expr nextPrimExpr() {
         if (eof())
-            return null;
+            throw new CSawException("reached end of file in incomplete state");
 
         switch (mToken.type) {
             case IDENTIFIER: {
