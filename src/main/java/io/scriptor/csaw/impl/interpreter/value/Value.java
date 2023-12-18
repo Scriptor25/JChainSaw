@@ -6,9 +6,9 @@ import static io.scriptor.csaw.impl.interpreter.Environment.hasFunction;
 import static io.scriptor.csaw.impl.interpreter.Environment.hasThing;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.Type;
-import io.scriptor.csaw.impl.Type.ArrayType;
 import io.scriptor.csaw.impl.interpreter.Environment;
+import io.scriptor.csaw.impl.interpreter.Type;
+import io.scriptor.csaw.impl.interpreter.Type.ArrayType;
 
 public abstract class Value {
 
@@ -18,7 +18,7 @@ public abstract class Value {
         return mReturn;
     }
 
-    public Value isReturn(boolean ret) {
+    public Value setReturn(boolean ret) {
         mReturn = ret;
         return this;
     }
@@ -101,7 +101,7 @@ public abstract class Value {
             return new ValueRef(at.size, at.type);
 
         if (origin.equals(Type.getNull()))
-            return new ConstNull();
+            return new ConstNull("has been asked for");
         if (origin.equals(Type.getNum()))
             return new ConstNum();
         if (origin.equals(Type.getStr()))
@@ -110,13 +110,13 @@ public abstract class Value {
             return new ConstChr();
 
         if (onlyPrimitives)
-            return new ConstNull();
+            return new ConstNull("not allowed to construct non-primitive");
 
         if (!hasThing(origin.name))
             throw new CSawException("'%s' is not a thing", origin.name);
 
         if (!dontConstruct && hasFunction(Type.getNull(), type.name))
-            return getAndInvoke(new ConstNull(), type.name);
+            return getAndInvoke(new ConstNull("call of constructor"), type.name);
 
         return new ConstThing(env, type.name);
     }
@@ -125,28 +125,28 @@ public abstract class Value {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().getInt() & right.asNum().getInt());
 
-        return getAndInvoke(new ConstNull(), "&", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function &"), "&", left, right);
     }
 
     public static Value and(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() != 0.0 && right.asNum().get() != 0.0);
 
-        return getAndInvoke(new ConstNull(), "&&", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function &&"), "&&", left, right);
     }
 
     public static Value binOr(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().getInt() | right.asNum().getInt());
 
-        return getAndInvoke(new ConstNull(), "|", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function |"), "|", left, right);
     }
 
     public static Value or(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() != 0.0 || right.asNum().get() != 0.0);
 
-        return getAndInvoke(new ConstNull(), "||", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function ||"), "||", left, right);
     }
 
     public static Value cmpe(Environment env, Value left, Value right) {
@@ -156,7 +156,7 @@ public abstract class Value {
         if (left.isStr() && right.isStr())
             return new ConstNum(left.asStr().get().equals(right.asStr().get()));
 
-        return getAndInvoke(new ConstNull(), "==", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function =="), "==", left, right);
     }
 
     public static Value cmpne(Environment env, Value left, Value right) {
@@ -166,35 +166,35 @@ public abstract class Value {
         if (left.isStr() && right.isStr())
             return new ConstNum(!left.asStr().get().equals(right.asStr().get()));
 
-        return getAndInvoke(new ConstNull(), "!=", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function !="), "!=", left, right);
     }
 
     public static Value cmpl(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() < right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), "<", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function <"), "<", left, right);
     }
 
     public static Value cmple(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() <= right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), "<=", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function <="), "<=", left, right);
     }
 
     public static Value cmpg(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() > right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), ">", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function >"), ">", left, right);
     }
 
     public static Value cmpge(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() >= right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), ">=", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function >="), ">=", left, right);
     }
 
     public static Value add(Environment env, Value left, Value right) {
@@ -204,56 +204,56 @@ public abstract class Value {
         if (left.isStr() || right.isStr())
             return new ConstStr(left.toString() + right.toString());
 
-        return getAndInvoke(new ConstNull(), "+", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function +"), "+", left, right);
     }
 
     public static Value sub(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() - right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), "-", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function -"), "-", left, right);
     }
 
     public static Value mul(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() * right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), "*", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function *"), "*", left, right);
     }
 
     public static Value div(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() / right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), "/", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function /"), "/", left, right);
     }
 
     public static Value mod(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().get() % right.asNum().get());
 
-        return getAndInvoke(new ConstNull(), "%", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function %"), "%", left, right);
     }
 
     public static Value xor(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().getInt() ^ right.asNum().getInt());
 
-        return getAndInvoke(new ConstNull(), "^", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function ^"), "^", left, right);
     }
 
     public static Value sl(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().getInt() << right.asNum().getInt());
 
-        return getAndInvoke(new ConstNull(), "<<", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function <<"), "<<", left, right);
     }
 
     public static Value sr(Environment env, Value left, Value right) {
         if (left.isNum() && right.isNum())
             return new ConstNum(left.asNum().getInt() >> right.asNum().getInt());
 
-        return getAndInvoke(new ConstNull(), ">>", left, right);
+        return getAndInvoke(new ConstNull("call of no-member function >>"), ">>", left, right);
     }
 
     public static Value neg(Environment env, Value value) {

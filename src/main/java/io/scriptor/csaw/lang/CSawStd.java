@@ -1,5 +1,8 @@
 package io.scriptor.csaw.lang;
 
+import java.util.stream.IntStream;
+
+import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -83,5 +86,9 @@ public class CSawStd {
 
     public static ConstNum time() {
         return new ConstNum(System.currentTimeMillis());
+    }
+
+    public static void parallel(ConstNum frominc, ConstNum toexc, ConstLambda lambda) {
+        IntStream.range(frominc.getInt(), toexc.getInt()).parallel().forEach(i -> lambda.invoke(new ConstNum(i)));
     }
 }

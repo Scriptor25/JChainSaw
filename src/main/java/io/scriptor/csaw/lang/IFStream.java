@@ -6,7 +6,7 @@ import static io.scriptor.java.ErrorUtil.handleVoid;
 import java.io.BufferedReader;
 import java.io.FileReader;
 
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -23,7 +23,8 @@ public class IFStream extends Value {
         mReader = new BufferedReader(handle(() -> new FileReader(mFilename)));
     }
 
-    public ConstNum open() {
+    @Override
+    public ConstNum asNum() {
         return new ConstNum(mReader != null);
     }
 

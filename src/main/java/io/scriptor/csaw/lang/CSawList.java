@@ -5,7 +5,7 @@ import static io.scriptor.csaw.impl.interpreter.Environment.getFunction;
 import java.util.List;
 import java.util.Vector;
 
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNull;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
@@ -41,11 +41,10 @@ public class CSawList extends Value {
     }
 
     public Value pop() {
-        final var value = mValues.get(0);
-        mValues.remove(0);
-        return value;
+        return mValues.remove(0);
     }
 
+    @CSawAlias("!")
     public ConstNum isEmpty() {
         return new ConstNum(mValues.isEmpty());
     }
@@ -61,7 +60,8 @@ public class CSawList extends Value {
     public CSawList sort(ConstStr comparator) {
         final var list = new CSawList(mValues);
         final var cmp = getFunction(Type.getNull(), comparator.get(), Type.getAny(), Type.getAny());
-        list.mValues.sort((v1, v2) -> cmp.invoke(new ConstNull(), v1, v2).asNum().getInt());
+        list.mValues.sort((v1, v2) -> cmp
+                .invoke(new ConstNull("call of no-member function to compare two values"), v1, v2).asNum().getInt());
         return list;
     }
 

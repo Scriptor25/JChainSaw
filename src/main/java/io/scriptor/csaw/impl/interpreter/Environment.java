@@ -5,23 +5,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.Pair;
 import io.scriptor.csaw.impl.Parameter;
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.frontend.stmt.EnclosedStmt;
+import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.Value;
-import io.scriptor.csaw.impl.stmt.EnclosedStmt;
 
 public class Environment {
 
     private static Environment GLOBAL;
 
-    private static final Map<Type, Map<String, List<FunDef>>> FUNCTIONS = new ConcurrentHashMap<>();
-    private static final Map<String, Type> ALIAS = new ConcurrentHashMap<>();
-    private static final Map<String, Parameter[]> THINGS = new ConcurrentHashMap<>();
-    private static final Map<String, List<String>> GROUPS = new ConcurrentHashMap<>();
+    private static final Map<Type, Map<String, List<FunDef>>> FUNCTIONS = new HashMap<>();
+    private static final Map<String, Type> ALIAS = new HashMap<>();
+    private static final Map<String, Parameter[]> THINGS = new HashMap<>();
+    private static final Map<String, List<String>> GROUPS = new HashMap<>();
 
     public static Environment initGlobal(String path) {
         return GLOBAL = new Environment(path);
@@ -90,7 +88,7 @@ public class Environment {
                 .parameters(paramTypes)
                 .vararg(vararg)
                 .member(member)
-                .body(new FunDef.FunBody(parameters, body))
+                .body(new FunBody(parameters, body))
                 .build();
 
         FUNCTIONS
@@ -228,7 +226,7 @@ public class Environment {
         return false;
     }
 
-    private final Map<String, Pair<Type, Value>> mVariables = new HashMap<>();
+    private final Map<String, Variable> mVariables = new HashMap<>();
     private String mPath;
 
     private Environment(String path) {
@@ -256,30 +254,33 @@ public class Environment {
     public <V extends Value> V createVariable(String id, Type type, V value) {
         if (hasVariable(id))
             throw new CSawException("variable '%s' already defined", id);
-        mVariables.put(id, new Pair<>(type, value));
+        mVariables.put(id, new Variable(type, value));
         return value;
     }
 
-    private Pair<Type, Value> getVarEntry(String id) {
+    private Variable getVarEntry(String id) {
         if (!hasVariable(id))
             throw new CSawException("undefined variable '%s'", id);
         return mVariables.get(id);
     }
 
     public Value getVariable(String id) {
-        return getVarEntry(id).second;
+        if (!hasVariable(id))
+            if (hasFunction(Type.getNull(), id))
+                return new ConstLambda(getFunction(Type.getNull(), id));
+        return getVarEntry(id).value;
     }
 
     public <V extends Value> V setVariable(String id, V value) {
         final var variable = getVarEntry(id);
-        if (!isAssignable(value.getType(), variable.first))
+        if (!isAssignable(value.getType(), variable.type))
             throw new CSawException(
                     "variable '%s' (%s) cannot be assigned to value of type '%s'",
                     id,
-                    variable.first,
+                    variable.type,
                     value.getType());
 
-        variable.second = value;
+        variable.value = value;
         return value;
     }
 }

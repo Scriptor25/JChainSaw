@@ -7,7 +7,7 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -26,16 +26,17 @@ public class CSawImg extends Value {
         mData = new BufferedImage(width.getInt(), height.getInt(), BufferedImage.TYPE_INT_ARGB);
     }
 
-    private boolean noData() {
-        return mData == null;
+    @Override
+    public ConstNum asNum() {
+        return new ConstNum(mData != null);
     }
 
     public ConstNum getWidth() {
-        return new ConstNum(noData() ? 0 : mData.getWidth());
+        return new ConstNum(mData == null ? 0 : mData.getWidth());
     }
 
     public ConstNum getHeight() {
-        return new ConstNum(noData() ? 0 : mData.getHeight());
+        return new ConstNum(mData == null ? 0 : mData.getHeight());
     }
 
     private int getRGB(ConstNum x, ConstNum y) {

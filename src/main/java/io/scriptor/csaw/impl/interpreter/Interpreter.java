@@ -11,22 +11,32 @@ import java.io.FileInputStream;
 import java.util.Arrays;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.Parser;
-import io.scriptor.csaw.impl.Type;
-import io.scriptor.csaw.impl.expr.AssignExpr;
-import io.scriptor.csaw.impl.expr.BinExpr;
-import io.scriptor.csaw.impl.expr.CallExpr;
-import io.scriptor.csaw.impl.expr.ChrExpr;
-import io.scriptor.csaw.impl.expr.ConExpr;
-import io.scriptor.csaw.impl.expr.ConstExpr;
-import io.scriptor.csaw.impl.expr.Expr;
-import io.scriptor.csaw.impl.expr.IdExpr;
-import io.scriptor.csaw.impl.expr.IndexExpr;
-import io.scriptor.csaw.impl.expr.LambdaExpr;
-import io.scriptor.csaw.impl.expr.MemExpr;
-import io.scriptor.csaw.impl.expr.NumExpr;
-import io.scriptor.csaw.impl.expr.StrExpr;
-import io.scriptor.csaw.impl.expr.UnExpr;
+import io.scriptor.csaw.impl.frontend.Parser;
+import io.scriptor.csaw.impl.frontend.expr.AssignExpr;
+import io.scriptor.csaw.impl.frontend.expr.BinExpr;
+import io.scriptor.csaw.impl.frontend.expr.CallExpr;
+import io.scriptor.csaw.impl.frontend.expr.ChrExpr;
+import io.scriptor.csaw.impl.frontend.expr.ConExpr;
+import io.scriptor.csaw.impl.frontend.expr.ConstExpr;
+import io.scriptor.csaw.impl.frontend.expr.Expr;
+import io.scriptor.csaw.impl.frontend.expr.IdExpr;
+import io.scriptor.csaw.impl.frontend.expr.IndexExpr;
+import io.scriptor.csaw.impl.frontend.expr.LambdaExpr;
+import io.scriptor.csaw.impl.frontend.expr.MemExpr;
+import io.scriptor.csaw.impl.frontend.expr.NumExpr;
+import io.scriptor.csaw.impl.frontend.expr.StrExpr;
+import io.scriptor.csaw.impl.frontend.expr.UnExpr;
+import io.scriptor.csaw.impl.frontend.stmt.AliasStmt;
+import io.scriptor.csaw.impl.frontend.stmt.EnclosedStmt;
+import io.scriptor.csaw.impl.frontend.stmt.ForStmt;
+import io.scriptor.csaw.impl.frontend.stmt.FunStmt;
+import io.scriptor.csaw.impl.frontend.stmt.IfStmt;
+import io.scriptor.csaw.impl.frontend.stmt.IncStmt;
+import io.scriptor.csaw.impl.frontend.stmt.RetStmt;
+import io.scriptor.csaw.impl.frontend.stmt.Stmt;
+import io.scriptor.csaw.impl.frontend.stmt.ThingStmt;
+import io.scriptor.csaw.impl.frontend.stmt.VarStmt;
+import io.scriptor.csaw.impl.frontend.stmt.WhileStmt;
 import io.scriptor.csaw.impl.interpreter.value.ConstChr;
 import io.scriptor.csaw.impl.interpreter.value.ConstNull;
 import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
@@ -34,17 +44,6 @@ import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.NamedValue;
 import io.scriptor.csaw.impl.interpreter.value.Value;
-import io.scriptor.csaw.impl.stmt.AliasStmt;
-import io.scriptor.csaw.impl.stmt.EnclosedStmt;
-import io.scriptor.csaw.impl.stmt.ForStmt;
-import io.scriptor.csaw.impl.stmt.FunStmt;
-import io.scriptor.csaw.impl.stmt.IfStmt;
-import io.scriptor.csaw.impl.stmt.IncStmt;
-import io.scriptor.csaw.impl.stmt.RetStmt;
-import io.scriptor.csaw.impl.stmt.Stmt;
-import io.scriptor.csaw.impl.stmt.ThingStmt;
-import io.scriptor.csaw.impl.stmt.VarStmt;
-import io.scriptor.csaw.impl.stmt.WhileStmt;
 import io.scriptor.java.ErrorUtil;
 
 public class Interpreter {
@@ -54,7 +53,7 @@ public class Interpreter {
 
     public static Value evaluate(Environment env, Stmt stmt) {
         if (stmt == null)
-            return new ConstNull();
+            return new ConstNull("cannot evaluate null stmt");
 
         if (stmt instanceof EnclosedStmt)
             return evaluate(env, (EnclosedStmt) stmt);
@@ -91,12 +90,12 @@ public class Interpreter {
             if (value.isReturn())
                 return value;
         }
-        return new ConstNull();
+        return new ConstNull("no return in enclosed stmt");
     }
 
     public static Value evaluate(Environment env, AliasStmt stmt) {
         createAlias(stmt.alias, stmt.origin);
-        return new ConstNull();
+        return new ConstNull("alias stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, ForStmt stmt) {
@@ -106,7 +105,7 @@ public class Interpreter {
             if (value.isReturn())
                 return value;
         }
-        return new ConstNull();
+        return new ConstNull("no return in for stmt");
     }
 
     public static Value evaluate(Environment env, FunStmt stmt) {
@@ -118,7 +117,7 @@ public class Interpreter {
                 stmt.vararg,
                 stmt.member,
                 stmt.body);
-        return new ConstNull();
+        return new ConstNull("function stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, IfStmt stmt) {
@@ -131,18 +130,18 @@ public class Interpreter {
     public static Value evaluate(Environment env, IncStmt stmt) {
         final var path = env.getPath();
         final var file = new File(path, stmt.path);
-        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env.setPath(file.getParent()));
+        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env.setPath(file.getParent()), false);
         env.setPath(path);
-        return new ConstNull();
+        return new ConstNull("inc stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, RetStmt stmt) {
-        return evaluate(env, stmt.value).isReturn(true);
+        return evaluate(env, stmt.value).setReturn(true);
     }
 
     public static Value evaluate(Environment env, ThingStmt stmt) {
         createThing(stmt.group, stmt.name, stmt.fields);
-        return new ConstNull();
+        return new ConstNull("thing stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, VarStmt stmt) {
@@ -153,7 +152,7 @@ public class Interpreter {
             throw new CSawException("cannot assign value of type '%s' to type '%s'", value.getType(), stmt.type);
 
         env.createVariable(stmt.name, stmt.type, value);
-        return new ConstNull();
+        return new ConstNull("var stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, WhileStmt stmt) {
@@ -163,11 +162,13 @@ public class Interpreter {
             if (value.isReturn())
                 return value;
         }
-
-        return new ConstNull();
+        return new ConstNull("no return in while stmt");
     }
 
     public static Value evaluate(Environment env, Expr expr) {
+        if (expr == null)
+            return new ConstNull("cannot evaluate null expr");
+
         if (expr instanceof AssignExpr)
             return evaluate(env, (AssignExpr) expr);
         if (expr instanceof BinExpr)
@@ -260,7 +261,7 @@ public class Interpreter {
         }
 
         String name = null;
-        Value member = new ConstNull();
+        Value member = new ConstNull("in case the function has no member");
 
         if (expr.function instanceof IdExpr e)
             name = e.value;

@@ -22,9 +22,9 @@ interval intensity = interval(0.000, 0.999);
 
     ## Write the translated [0,255] value of each color component.
     output.set(i, j,
-        255 << 24 |
-        floor(256 * intensity.clamp(r)) << 16 |
-        floor(256 * intensity.clamp(g)) << 8 |
-        floor(256 * intensity.clamp(b))
+        0xff << 24 |
+        (floor(256 * intensity.clamp(r)) & 0xff) << 16 |
+        (floor(256 * intensity.clamp(g)) & 0xff) << 8 |
+        (floor(256 * intensity.clamp(b)) & 0xff)
     );
 }

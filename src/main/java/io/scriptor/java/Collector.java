@@ -14,9 +14,9 @@ import java.util.Vector;
 import io.github.classgraph.ClassGraph;
 import io.scriptor.csaw.impl.CSawException;
 import io.scriptor.csaw.impl.Parameter;
-import io.scriptor.csaw.impl.Type;
 import io.scriptor.csaw.impl.interpreter.Environment;
 import io.scriptor.csaw.impl.interpreter.IFunBody;
+import io.scriptor.csaw.impl.interpreter.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstChr;
 import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
@@ -42,10 +42,7 @@ public class Collector {
                 if (!Modifier.isPublic(fld.getModifiers()))
                     continue;
 
-                final var field = new Parameter();
-                field.name = fld.getName();
-                field.type = getType(env, fld.getType());
-                typefields.add(field);
+                typefields.add(new Parameter(fld.getName(), getType(fld.getType())));
             }
             createThing("", typename, typefields.toArray(new Parameter[0]));
             createAlias(cls.getName(), type);
@@ -57,7 +54,7 @@ public class Collector {
 
                 final var params = new Type[cnstr.getParameterCount() - (cnstr.isVarArgs() ? 1 : 0)];
                 for (int i = 0; i < params.length; i++)
-                    params[i] = getType(env, cnstr.getParameterTypes()[i]);
+                    params[i] = getType(cnstr.getParameterTypes()[i]);
 
                 final IFunBody body = (member, args) -> {
                     return handle(() -> (Value) cnstr.newInstance((Object[]) args));
@@ -80,7 +77,7 @@ public class Collector {
 
                 final var params = new Type[mthd.getParameterCount() - (mthd.isVarArgs() ? 1 : 0)];
                 for (int i = 0; i < params.length; i++)
-                    params[i] = getType(env, mthd.getParameterTypes()[i]);
+                    params[i] = getType(mthd.getParameterTypes()[i]);
 
                 final IFunBody body = (member, args) -> {
                     return Value.class.cast(handle(() -> mthd.invoke(
@@ -93,7 +90,7 @@ public class Collector {
                 registerFunction(
                         false,
                         mthd.getName(),
-                        getType(env, mthd.getReturnType()),
+                        getType(mthd.getReturnType()),
                         params,
                         mthd.isVarArgs() ? "va" : null,
                         Modifier.isStatic(mthd.getModifiers()) ? Type.getNull() : type,
@@ -103,7 +100,7 @@ public class Collector {
                     registerFunction(
                             false,
                             mthd.getAnnotation(CSawAlias.class).value(),
-                            getType(env, mthd.getReturnType()),
+                            getType(mthd.getReturnType()),
                             params,
                             mthd.isVarArgs() ? "va" : null,
                             Modifier.isStatic(mthd.getModifiers()) ? Type.getNull() : type,
@@ -129,7 +126,7 @@ public class Collector {
         return allArgs;
     }
 
-    private static Type getType(Environment env, Class<?> cls) {
+    private static Type getType(Class<?> cls) {
         if (cls.equals(Void.class) || cls.equals(void.class))
             return Type.getNull();
 

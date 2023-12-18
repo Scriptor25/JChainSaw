@@ -5,5 +5,5 @@ import io.scriptor.csaw.impl.interpreter.value.Value;
 @FunctionalInterface
 public interface IFunBody {
 
-    public Value invoke(Value member, Value... args) ;
+    public Value invoke(Value member, Value... args);
 }

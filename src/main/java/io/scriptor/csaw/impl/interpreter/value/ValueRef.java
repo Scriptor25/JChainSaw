@@ -6,7 +6,7 @@ import static io.scriptor.csaw.impl.interpreter.Environment.isAssignable;
 import java.util.Arrays;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.Type;
 
 public class ValueRef extends Value {
 

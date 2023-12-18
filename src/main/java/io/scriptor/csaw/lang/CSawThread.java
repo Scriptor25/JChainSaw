@@ -2,11 +2,10 @@ package io.scriptor.csaw.lang;
 
 import static io.scriptor.java.ErrorUtil.handleVoid;
 
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.Value;
-import io.scriptor.java.CSawAlias;
 import io.scriptor.java.CSawNative;
 
 @CSawNative("thrd")
@@ -22,8 +21,9 @@ public class CSawThread extends Value {
         mThread = new Thread(() -> function.invoke(), "CSawThread");
     }
 
-    public void start() {
+    public CSawThread start() {
         mThread.start();
+        return this;
     }
 
     public void join() {
@@ -34,9 +34,9 @@ public class CSawThread extends Value {
         mThread.interrupt();
     }
 
-    @CSawAlias("!")
-    public ConstNum isEmpty() {
-        return new ConstNum(mThread == null);
+    @Override
+    public ConstNum asNum() {
+        return new ConstNum(mThread != null);
     }
 
     public ConstNum isAlive() {

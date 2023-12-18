@@ -1,9 +1,9 @@
 inc "complex.csaw";
-inc "pool.csaw";
+inc "../std/pool.csaw";
 
 num MAX_ITER = 100;
 num SAMPLES  =  10;
-num WIDTH    = 100;
+num WIDTH    = 512;
 num HEIGHT   = WIDTH;
 
 @main: num {
@@ -30,7 +30,7 @@ num HEIGHT   = WIDTH;
                 }
                 n = n / (SAMPLES * MAX_ITER);
                 num grey = floor(n * 255.999);
-                output.set(i, j, 255 << 24 | (grey & 255) << 16 | (grey & 255) << 8 | (grey & 255));
+                output.set(i, j, 0xff << 24 | (grey & 0xff) << 16 | (grey & 0xff) << 8 | (grey & 0xff));
 
                 b.on_progress();
             });
@@ -39,10 +39,10 @@ num HEIGHT   = WIDTH;
 
     printf("Starting...");
 
-    pool p = pool(16, tasks);
+    pool p = pool(8, tasks);
     p.join();
     
-    output.write("png", "output/out.png");
+    output.write("png", "output/mandel.png");
 
     printf("\rDone!            %n");
 

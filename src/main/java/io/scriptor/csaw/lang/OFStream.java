@@ -6,7 +6,7 @@ import static io.scriptor.java.ErrorUtil.handleVoid;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.Type;
 import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
@@ -23,7 +23,8 @@ public class OFStream extends Value {
         mWriter = new BufferedWriter(handle(() -> new FileWriter(mFilename)));
     }
 
-    public ConstNum open() {
+    @Override
+    public ConstNum asNum() {
         return new ConstNum(mWriter != null);
     }
 

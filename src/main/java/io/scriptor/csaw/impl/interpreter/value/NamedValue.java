@@ -1,6 +1,6 @@
 package io.scriptor.csaw.impl.interpreter.value;
 
-import io.scriptor.csaw.impl.Type;
+import io.scriptor.csaw.impl.interpreter.Type;
 
 public class NamedValue extends Value {
 
