@@ -265,12 +265,12 @@ public class Parser {
 
     private Type nextType(Expr type) {
         if (type instanceof IdExpr t)
-            return Type.get(t.value);
+            return Type.get(t.value());
         if (type instanceof IndexExpr t) {
-            if (!t.index.isConstant())
+            if (!t.index().isConstant())
                 throw new CSawException("cannot pre-evaluate non-constant expression!");
-            final var size = Interpreter.evaluate(getGlobal(), t.index).asNum().getInt();
-            return Type.get(nextType(t.expr), size);
+            final var size = Interpreter.evaluate(getGlobal(), t.index()).asNum().getInt();
+            return Type.get(nextType(t.expr()), size);
         }
 
         throw new CSawException("unsupported type expression");

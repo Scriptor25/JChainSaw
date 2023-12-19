@@ -7,14 +7,26 @@ import io.scriptor.csaw.impl.frontend.stmt.Stmt;
 
 public class LambdaExpr extends Expr {
 
-    public final IdExpr[] passed;
-    public final Parameter[] parameters;
-    public final Stmt body;
+    private final IdExpr[] mPassed;
+    private final Parameter[] mParameters;
+    private final Stmt mBody;
 
     public LambdaExpr(IdExpr[] passed, Parameter[] parameters, Stmt body) {
-        this.passed = passed;
-        this.parameters = parameters;
-        this.body = body;
+        this.mPassed = passed;
+        this.mParameters = parameters;
+        this.mBody = body;
+    }
+
+    public synchronized IdExpr[] passed() {
+        return mPassed;
+    }
+
+    public synchronized Parameter[] parameters() {
+        return mParameters;
+    }
+
+    public synchronized Stmt body() {
+        return mBody;
     }
 
     @Override
@@ -29,7 +41,7 @@ public class LambdaExpr extends Expr {
 
     @Override
     public String toString() {
-        return String.format("%s%s %s", Arrays.toString(passed), Arrays.toString(parameters), body);
+        return String.format("%s%s %s", Arrays.toString(mPassed), Arrays.toString(mParameters), mBody);
     }
 
 }

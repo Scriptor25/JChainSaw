@@ -2,10 +2,14 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class StrExpr extends Expr {
 
-    public final String value;
+    private final String mValue;
 
     public StrExpr(String value) {
-        this.value = value;
+        this.mValue = value;
+    }
+
+    public synchronized String value() {
+        return mValue;
     }
 
     @Override
@@ -20,6 +24,6 @@ public class StrExpr extends Expr {
 
     @Override
     public String toString() {
-        return String.format("\"%s\"", value);
+        return String.format("\"%s\"", mValue);
     }
 }

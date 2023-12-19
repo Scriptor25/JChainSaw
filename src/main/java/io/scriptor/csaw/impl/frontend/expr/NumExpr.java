@@ -2,17 +2,21 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class NumExpr extends Expr {
 
-    public final double value;
+    private final double mValue;
 
     public NumExpr(String value, int radix) {
         if (radix == 10)
-            this.value = Double.parseDouble(value);
+            this.mValue = Double.parseDouble(value);
         else
-            this.value = Long.parseLong(value, radix);
+            this.mValue = Long.parseLong(value, radix);
     }
 
     public NumExpr(double value) {
-        this.value = value;
+        this.mValue = value;
+    }
+
+    public synchronized double value() {
+        return mValue;
     }
 
     @Override
@@ -27,6 +31,6 @@ public class NumExpr extends Expr {
 
     @Override
     public String toString() {
-        return Double.toString(value);
+        return Double.toString(mValue);
     }
 }

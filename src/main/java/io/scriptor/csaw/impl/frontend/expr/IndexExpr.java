@@ -2,12 +2,20 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class IndexExpr extends Expr {
 
-    public final Expr expr;
-    public final Expr index;
+    private final Expr mExpr;
+    private final Expr mIndex;
 
     public IndexExpr(Expr expr, Expr index) {
-        this.expr = expr;
-        this.index = index;
+        this.mExpr = expr;
+        this.mIndex = index;
+    }
+
+    public synchronized Expr expr() {
+        return mExpr;
+    }
+
+    public synchronized Expr index() {
+        return mIndex;
     }
 
     @Override
@@ -17,12 +25,12 @@ public class IndexExpr extends Expr {
 
     @Override
     public Expr makeConstant() {
-        return new IndexExpr(expr.makeConstant(), index.makeConstant());
+        return new IndexExpr(mExpr.makeConstant(), mIndex.makeConstant());
     }
 
     @Override
     public String toString() {
-        return String.format("%s[%s]", expr, index);
+        return String.format("%s[%s]", mExpr, mIndex);
     }
 
 }

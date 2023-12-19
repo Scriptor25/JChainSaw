@@ -2,12 +2,20 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class MemExpr extends Expr {
 
-    public final Expr object;
-    public final String member;
+    private final Expr mObject;
+    private final String mMember;
 
     public MemExpr(Expr object, String member) {
-        this.object = object;
-        this.member = member;
+        this.mObject = object;
+        this.mMember = member;
+    }
+
+    public synchronized Expr object() {
+        return mObject;
+    }
+
+    public synchronized String member() {
+        return mMember;
     }
 
     @Override
@@ -17,12 +25,12 @@ public class MemExpr extends Expr {
 
     @Override
     public Expr makeConstant() {
-        return new MemExpr(object.makeConstant(), member);
+        return new MemExpr(mObject.makeConstant(), mMember);
     }
 
     @Override
     public String toString() {
-        return String.format("%s.%s", object, member);
+        return String.format("%s.%s", mObject, mMember);
     }
 
 }

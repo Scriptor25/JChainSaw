@@ -7,13 +7,16 @@ import io.scriptor.csaw.impl.interpreter.value.Value;
 
 public class ConstExpr extends Expr {
 
-    public final Value value;
-
+    private final Value mValue;
     private final String mStringRep;
 
     public ConstExpr(Expr expr) {
-        this.value = Interpreter.evaluate(getGlobal(), expr);
+        this.mValue = Interpreter.evaluate(getGlobal(), expr);
         this.mStringRep = expr.toString();
+    }
+
+    public synchronized Value value() {
+        return mValue;
     }
 
     @Override
@@ -28,7 +31,7 @@ public class ConstExpr extends Expr {
 
     @Override
     public String toString() {
-        return String.format("%s[=%s]", mStringRep, value);
+        return String.format("%s[=%s]", mStringRep, mValue);
     }
 
     public static Expr make(Expr expr) {

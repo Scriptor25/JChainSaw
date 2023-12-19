@@ -2,12 +2,20 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class AssignExpr extends Expr {
 
-    public final Expr object;
-    public final Expr value;
+    private final Expr mObject;
+    private final Expr mValue;
 
     public AssignExpr(Expr object, Expr value) {
-        this.object = object;
-        this.value = value;
+        this.mObject = object;
+        this.mValue = value;
+    }
+
+    public synchronized Expr object() {
+        return mObject;
+    }
+
+    public synchronized Expr value() {
+        return mValue;
     }
 
     @Override
@@ -17,12 +25,12 @@ public class AssignExpr extends Expr {
 
     @Override
     public Expr makeConstant() {
-        return new AssignExpr(object.makeConstant(), value.makeConstant());
+        return new AssignExpr(mObject.makeConstant(), mValue.makeConstant());
     }
 
     @Override
     public String toString() {
-        return String.format("%s = %s", object, value);
+        return String.format("%s = %s", mObject, mValue);
     }
 
 }

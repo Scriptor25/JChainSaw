@@ -2,10 +2,14 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class ChrExpr extends Expr {
 
-    public final char value;
+    private final char mValue;
 
     public ChrExpr(char value) {
-        this.value = value;
+        this.mValue = value;
+    }
+
+    public synchronized char value() {
+        return mValue;
     }
 
     @Override
@@ -20,6 +24,6 @@ public class ChrExpr extends Expr {
 
     @Override
     public String toString() {
-        return String.format("'%c'", value);
+        return String.format("'%c'", mValue);
     }
 }

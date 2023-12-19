@@ -2,28 +2,36 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class UnExpr extends Expr {
 
-    public final String operator;
-    public final Expr value;
+    private final String mOperator;
+    private final Expr mValue;
 
     public UnExpr(String operator, Expr value) {
-        this.operator = operator;
-        this.value = value;
+        this.mOperator = operator;
+        this.mValue = value;
+    }
+
+    public synchronized String operator() {
+        return mOperator;
+    }
+
+    public synchronized Expr value() {
+        return mValue;
     }
 
     @Override
     public boolean isConstant() {
-        return value.isConstant();
+        return mValue.isConstant();
     }
 
     @Override
     public Expr makeConstant() {
         if (isConstant())
             return new ConstExpr(this);
-        return ConstExpr.make(new UnExpr(operator, value.makeConstant()));
+        return ConstExpr.make(new UnExpr(mOperator, mValue.makeConstant()));
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s", operator, value);
+        return String.format("%s%s", mOperator, mValue);
     }
 }

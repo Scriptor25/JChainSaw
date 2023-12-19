@@ -2,12 +2,20 @@ package io.scriptor.csaw.impl.frontend.expr;
 
 public class CallExpr extends Expr {
 
-    public final Expr function;
-    public final Expr[] arguments;
+    private final Expr mFunction;
+    private final Expr[] mArguments;
 
     public CallExpr(Expr function, Expr[] arguments) {
-        this.function = function;
-        this.arguments = arguments;
+        this.mFunction = function;
+        this.mArguments = arguments;
+    }
+
+    public synchronized Expr function() {
+        return mFunction;
+    }
+
+    public synchronized Expr[] arguments() {
+        return mArguments;
     }
 
     @Override
@@ -17,22 +25,22 @@ public class CallExpr extends Expr {
 
     @Override
     public Expr makeConstant() {
-        final var args = new Expr[arguments.length];
+        final var args = new Expr[mArguments.length];
         for (int i = 0; i < args.length; i++)
-            args[i] = arguments[i].makeConstant();
-        return new CallExpr(function.makeConstant(), args);
+            args[i] = mArguments[i].makeConstant();
+        return new CallExpr(mFunction.makeConstant(), args);
     }
 
     @Override
     public String toString() {
         final var builder = new StringBuilder();
-        for (int i = 0; i < arguments.length; i++) {
+        for (int i = 0; i < mArguments.length; i++) {
             if (i > 0)
                 builder.append(", ");
-            builder.append(arguments[i]);
+            builder.append(mArguments[i]);
         }
 
-        return String.format("%s(%s)", function, builder);
+        return String.format("%s(%s)", mFunction, builder);
     }
 
 }

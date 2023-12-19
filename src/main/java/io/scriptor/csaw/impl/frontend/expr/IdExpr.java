@@ -4,15 +4,19 @@ import static io.scriptor.csaw.impl.interpreter.Environment.getGlobal;
 
 public class IdExpr extends Expr {
 
-    public final String value;
+    private final String mValue;
 
     public IdExpr(String name) {
-        this.value = name;
+        this.mValue = name;
+    }
+
+    public synchronized String value() {
+        return mValue;
     }
 
     @Override
     public boolean isConstant() {
-        return getGlobal().hasVariable(value);
+        return getGlobal().hasVariable(mValue);
     }
 
     @Override
@@ -22,7 +26,7 @@ public class IdExpr extends Expr {
 
     @Override
     public String toString() {
-        return value;
+        return mValue;
     }
 
 }
