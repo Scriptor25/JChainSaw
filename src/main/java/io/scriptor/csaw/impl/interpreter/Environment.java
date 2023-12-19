@@ -138,7 +138,8 @@ public class Environment {
         if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
             final var functions = FUNCTIONS.get(member).get(name);
             for (final var fun : functions) {
-                if (fun.vararg == null && fun.parameters.length != types.length) // wrong params number and not vararg
+                if (fun.vararg == null && fun.parameters.length != types.length) // wrong params number and not
+                                                                                 // vararg
                     continue;
                 if (fun.vararg != null && fun.parameters.length > types.length) // vararg but not enough params
                     continue;
@@ -200,7 +201,6 @@ public class Environment {
             THINGS.put(name, fields);
             return;
         }
-
         THINGS.put(name, fields);
         GROUPS.computeIfAbsent(group, key -> new Vector<>()).add(name);
     }

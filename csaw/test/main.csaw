@@ -1,7 +1,6 @@
-inc "../std/pool.csaw";
-
 num W = 1000;
 num H = W;
+num C = W * H;
 
 @random_color: num {
     num r = floor(255.999 * random());
@@ -25,16 +24,7 @@ num H = W;
 @main: num {
 
     img output = img(W, H);
-
-    num c = W * H;
-
-    list tasks;
-    for (num i = 0; i < c; i++)
-        tasks.add([output, i]() run(output, i));
-    
-    pool p = pool(16, tasks);
-    p.join();
-
+    parallel(0, C, [output](i: num) run(output, i));
     output.write("png", "output/test.png");
 
     ret 0;

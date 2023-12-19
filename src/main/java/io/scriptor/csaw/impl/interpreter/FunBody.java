@@ -28,9 +28,9 @@ public class FunBody implements IFunBody {
     public Value invoke(Value member, Value... args) {
         final var env = pre(member, args);
         Value value;
-        synchronized (this) { // slow as f
-            value = Interpreter.evaluate(env, implementation).setReturn(false);
-        }
+        // synchronized (this) { // slow as f
+        value = Interpreter.evaluate(env, implementation).setReturn(false);
+        // }
         return post(env, value);
     }
 
