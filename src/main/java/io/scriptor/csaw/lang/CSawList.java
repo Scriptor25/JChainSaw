@@ -1,13 +1,14 @@
 package io.scriptor.csaw.lang;
 
-import static io.scriptor.csaw.impl.Types.TYPE_ANY;
 import static io.scriptor.csaw.impl.interpreter.Environment.getFunction;
 
 import java.util.List;
 import java.util.Vector;
 
-import io.scriptor.csaw.impl.interpreter.value.NumValue;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.Type;
+import io.scriptor.csaw.impl.interpreter.value.ConstNull;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawAlias;
 import io.scriptor.java.CSawNative;
@@ -25,7 +26,7 @@ public class CSawList extends Value {
     }
 
     @CSawAlias("[]")
-    public Value get(NumValue index) {
+    public Value get(ConstNum index) {
         return mValues.get(index.getInt());
     }
 
@@ -33,38 +34,45 @@ public class CSawList extends Value {
         mValues.add(value);
     }
 
-    public void set(NumValue index, Value value) {
+    @CSawAlias("[]")
+    public Value set(ConstNum index, Value value) {
         mValues.set(index.getInt(), value);
+        return value;
     }
 
-    public NumValue size() {
-        return new NumValue(mValues.size());
+    public Value pop() {
+        return mValues.remove(0);
     }
 
-    public CSawList sub(NumValue from, NumValue to) {
+    @CSawAlias("!")
+    public ConstNum isEmpty() {
+        return new ConstNum(mValues.isEmpty());
+    }
+
+    public ConstNum size() {
+        return new ConstNum(mValues.size());
+    }
+
+    public CSawList sub(ConstNum from, ConstNum to) {
         return new CSawList(mValues.subList(from.getInt(), to.getInt()));
     }
 
-    public CSawList sort(StrValue comparator) {
+    public CSawList sort(ConstStr comparator) {
         final var list = new CSawList(mValues);
-        final var cmp = getFunction(null, comparator.get(), new String[] { TYPE_ANY, TYPE_ANY });
-        list.mValues.sort((v1, v2) -> cmp.invoke(null, v1, v2).asNum().getInt());
+        final var cmp = getFunction(Type.getNull(), comparator.get(), Type.getAny(), Type.getAny());
+        list.mValues.sort((v1, v2) -> cmp
+                .invoke(new ConstNull("call of no-member function to compare two values"), v1, v2).asNum().getInt());
         return list;
     }
 
     @Override
-    protected List<Value> value() {
+    protected Type type() {
+        return Type.get("list");
+    }
+
+    @Override
+    protected Object object() {
         return mValues;
-    }
-
-    @Override
-    protected String type() {
-        return "list";
-    }
-
-    @Override
-    protected boolean bool() {
-        return !mValues.isEmpty();
     }
 
     @Override

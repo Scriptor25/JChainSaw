@@ -1,7 +1,5 @@
 package io.scriptor.csaw.impl.interpreter;
 
-import static io.scriptor.csaw.impl.Types.TYPE_ANY;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -9,18 +7,18 @@ import java.util.Map;
 import java.util.Vector;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.Pair;
 import io.scriptor.csaw.impl.Parameter;
+import io.scriptor.csaw.impl.frontend.stmt.EnclosedStmt;
+import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
 import io.scriptor.csaw.impl.interpreter.value.Value;
-import io.scriptor.csaw.impl.stmt.EnclosedStmt;
 
 public class Environment {
 
     private static Environment GLOBAL;
 
-    private static final Map<String, Map<String, List<FunDef>>> FUNCTIONS = new HashMap<>();
-    private static final Map<String, String> ALIAS = new HashMap<>();
-    private static final Map<String, Parameter[]> TYPES = new HashMap<>();
+    private static final Map<Type, Map<String, List<FunDef>>> FUNCTIONS = new HashMap<>();
+    private static final Map<String, Type> ALIAS = new HashMap<>();
+    private static final Map<String, Parameter[]> THINGS = new HashMap<>();
     private static final Map<String, List<String>> GROUPS = new HashMap<>();
 
     public static Environment initGlobal(String path) {
@@ -36,11 +34,11 @@ public class Environment {
 
         FUNCTIONS.clear();
         ALIAS.clear();
-        TYPES.clear();
+        THINGS.clear();
         GROUPS.clear();
     }
 
-    public static boolean hasFunction(String member, String name, String... types) {
+    public static boolean hasFunction(Type member, String name, Type... types) {
         if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
             final var functions = FUNCTIONS.get(member).get(name);
             for (final var fun : functions) {
@@ -53,7 +51,7 @@ public class Environment {
                 for (; i < fun.parameters.length; i++)
                     if (!isAssignable(types[i], fun.parameters[i]))
                         break;
-                if (i == fun.parameters.length || (fun.vararg != null && i < types.length))
+                if (i == fun.parameters.length)
                     return true;
             }
         }
@@ -64,17 +62,15 @@ public class Environment {
     public static FunDef createFunction(
             boolean constructor,
             String name,
-            String type,
+            Type type,
             Parameter[] params,
             String vararg,
-            String member,
+            Type member,
             EnclosedStmt body) {
 
-        final var paramc = params == null ? 0 : params.length;
-
-        final var parameters = new String[paramc];
-        final var paramTypes = new String[paramc];
-        for (int i = 0; i < paramc; i++) {
+        final var parameters = new String[params.length];
+        final var paramTypes = new Type[params.length];
+        for (int i = 0; i < params.length; i++) {
             parameters[i] = params[i].name;
             paramTypes[i] = params[i].type;
         }
@@ -92,7 +88,7 @@ public class Environment {
                 .parameters(paramTypes)
                 .vararg(vararg)
                 .member(member)
-                .body(new FunDef.FunBody(parameters, body))
+                .body(new FunBody(parameters, body))
                 .build();
 
         FUNCTIONS
@@ -106,16 +102,14 @@ public class Environment {
     public static void registerFunction(
             boolean constructor,
             String name,
-            String type,
-            String[] params,
+            Type type,
+            Type[] params,
             String vararg,
-            String member,
+            Type member,
             IFunBody body) {
 
-        final var paramc = params == null ? 0 : params.length;
-
-        final var parameters = new String[paramc];
-        for (int i = 0; i < paramc; i++)
+        final var parameters = new Type[params.length];
+        for (int i = 0; i < params.length; i++)
             parameters[i] = params[i];
 
         if (hasFunction(member, name, parameters))
@@ -140,11 +134,12 @@ public class Environment {
                 .add(fun);
     }
 
-    public static FunDef getFunction(String member, String name, String... types) {
+    public static FunDef getFunction(Type member, String name, Type... types) {
         if (FUNCTIONS.containsKey(member) && FUNCTIONS.get(member).containsKey(name)) {
             final var functions = FUNCTIONS.get(member).get(name);
             for (final var fun : functions) {
-                if (fun.vararg == null && fun.parameters.length != types.length) // wrong params number and not vararg
+                if (fun.vararg == null && fun.parameters.length != types.length) // wrong params number and not
+                                                                                 // vararg
                     continue;
                 if (fun.vararg != null && fun.parameters.length > types.length) // vararg but not enough params
                     continue;
@@ -153,11 +148,7 @@ public class Environment {
                 for (; i < fun.parameters.length; i++)
                     if (!isAssignable(types[i], fun.parameters[i]))
                         break;
-                if (i == fun.parameters.length || (fun.vararg != null && i < types.length)) // either right number of
-                    // params or the function has
-                    // to be vararg and then the
-                    // number must be less than the
-                    // params length
+                if (i == fun.parameters.length)
                     return fun;
             }
         }
@@ -170,73 +161,72 @@ public class Environment {
     }
 
     public static Value getAndInvoke(Value member, String name, Value... args) {
-        final var types = new String[args == null ? 0 : args.length];
+        final var types = new Type[args.length];
         for (int i = 0; i < types.length; i++)
             types[i] = args[i].getType();
 
-        return getFunction(member != null ? member.getType() : null, name, types).invoke(member, args);
+        return getFunction(member.getType(), name, types).invoke(member, args);
     }
 
-    public static boolean hasAlias(String type) {
-        return ALIAS.containsKey(type);
+    public static boolean hasAlias(String alias) {
+        return ALIAS.containsKey(alias);
     }
 
-    public static void createAlias(String alias, String type) {
-        if (hasAlias(type))
-            throw new CSawException("alias already defined for type '%s'", type);
+    public static void createAlias(String alias, Type type) {
+        if (hasAlias(alias))
+            throw new CSawException("alias '%s' already defined", alias);
         ALIAS.put(alias, type);
     }
 
-    public static String getAlias(String type) {
-        if (!hasAlias(type))
-            throw new CSawException("undefined alias for type '%s'", type);
-        return ALIAS.get(type);
+    public static Type getAlias(String alias) {
+        if (!hasAlias(alias))
+            throw new CSawException("undefined alias for type '%s'", alias);
+        return ALIAS.get(alias);
     }
 
-    public static String getOrigin(String type) {
-        if (!hasAlias(type))
+    public static Type getOrigin(Type type) {
+        if (!hasAlias(type.name))
             return type;
-        return getOrigin(getAlias(type));
+        return getOrigin(getAlias(type.name));
     }
 
-    public static boolean hasType(String type) {
-        return TYPES.containsKey(type);
+    public static boolean hasThing(String name) {
+        return THINGS.containsKey(name);
     }
 
-    public static void createType(String group, String name, Parameter[] fields) {
-        if (hasType(name)) {
-            if (getType(name) != null) // type is not opaque
+    public static void createThing(String group, String name, Parameter[] fields) {
+        if (hasThing(name)) {
+            if (getThing(name) != null) // type is not opaque
                 throw new CSawException("cannot redefine non-opaque type '%s'", name);
-            TYPES.put(name, fields);
+            THINGS.put(name, fields);
             return;
         }
-
-        TYPES.put(name, fields);
+        THINGS.put(name, fields);
         GROUPS.computeIfAbsent(group, key -> new Vector<>()).add(name);
     }
 
-    public static Parameter[] getType(String type) {
-        if (!hasType(type))
-            if (!hasAlias(type))
-                throw new CSawException("undefined type '%s'", type);
+    public static Parameter[] getThing(String name) {
+        if (!hasThing(name))
+            if (!hasAlias(name))
+                throw new CSawException("undefined type '%s'", name);
             else
-                return getType(getAlias(type));
-        return TYPES.get(type);
+                return getThing(getAlias(name).name);
+        return THINGS.get(name);
     }
 
-    public static boolean isAliasFor(String type, String aliasFor) {
+    public static boolean isAliasFor(Type type, Type aliasFor) {
         return getOrigin(type).equals(getOrigin(aliasFor));
     }
 
-    public static boolean isAssignable(String type, String to) {
-        if (TYPE_ANY.equals(to) || TYPE_ANY.equals(type) || isAliasFor(type, to))
+    public static boolean isAssignable(Type type, Type to) {
+        if (Type.getAny().equals(to) /* || Type.ANY.equals(type) */ || isAliasFor(type, to))
             return true;
-        if (GROUPS.containsKey(to))
-            return GROUPS.get(to).contains(type);
+        if (GROUPS.containsKey(to.name))
+            return GROUPS.get(to.name).contains(type.name);
         return false;
     }
 
-    private final Map<String, Pair<String, Value>> mVariables = new HashMap<>();
+    private final Map<String, Variable> mVariables = new HashMap<>();
     private String mPath;
 
     private Environment(String path) {
@@ -261,33 +251,36 @@ public class Environment {
         return mVariables.containsKey(id);
     }
 
-    public <V extends Value> V createVariable(String id, String type, V value) {
+    public <V extends Value> V createVariable(String id, Type type, V value) {
         if (hasVariable(id))
             throw new CSawException("variable '%s' already defined", id);
-        mVariables.put(id, new Pair<>(type, value));
+        mVariables.put(id, new Variable(type, value));
         return value;
     }
 
-    private Pair<String, Value> getVarEntry(String id) {
+    private Variable getVarEntry(String id) {
         if (!hasVariable(id))
             throw new CSawException("undefined variable '%s'", id);
         return mVariables.get(id);
     }
 
     public Value getVariable(String id) {
-        return getVarEntry(id).second;
+        if (!hasVariable(id))
+            if (hasFunction(Type.getNull(), id))
+                return new ConstLambda(getFunction(Type.getNull(), id));
+        return getVarEntry(id).value;
     }
 
     public <V extends Value> V setVariable(String id, V value) {
         final var variable = getVarEntry(id);
-        if (!isAssignable(value.getType(), variable.first))
+        if (!isAssignable(value.getType(), variable.type))
             throw new CSawException(
                     "variable '%s' (%s) cannot be assigned to value of type '%s'",
                     id,
-                    variable.first,
+                    variable.type,
                     value.getType());
 
-        variable.second = value;
+        variable.value = value;
         return value;
     }
 }

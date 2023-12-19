@@ -8,17 +8,21 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.Arrays;
 
-import io.scriptor.csaw.impl.Parser;
+import io.scriptor.csaw.impl.frontend.Parser;
 import io.scriptor.csaw.impl.interpreter.Environment;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.Type;
+import io.scriptor.csaw.impl.interpreter.value.ConstNull;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.java.Collector;
 import io.scriptor.java.ErrorUtil;
 
 public class CSaw {
 
     public static void main(String[] args) {
-        if (args.length == 0)
+        if (args.length == 0) {
             shell();
+            return;
+        }
 
         switch (args[0]) {
             case "-h":
@@ -54,9 +58,9 @@ public class CSaw {
             }
 
             try {
-                Parser.parse(new ByteArrayInputStream(input.getBytes()), env);
+                Parser.parse(new ByteArrayInputStream(input.getBytes()), env, true);
             } catch (Throwable t) {
-                System.out.println(t.getMessage());
+                t.printStackTrace();
             }
         }
     }
@@ -67,11 +71,12 @@ public class CSaw {
         final var env = Environment.initGlobal(file.getParent());
         Collector.collect(env);
 
-        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env);
+        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env, false);
 
-        if (hasFunction(null, "main")) {
-            final var argv = Arrays.stream(args).map(arg -> new StrValue(arg)).toArray(size -> new StrValue[size]);
-            System.out.printf("Exit Code %s%n", getAndInvoke(null, "main", argv));
+        if (hasFunction(Type.getNull(), "main")) {
+            final var argv = Arrays.stream(args).map(arg -> new ConstStr(arg)).toArray(size -> new ConstStr[size]);
+            System.out.printf("Exit Code %s%n",
+                    getAndInvoke(new ConstNull("call of main"), "main", argv));
         }
     }
 

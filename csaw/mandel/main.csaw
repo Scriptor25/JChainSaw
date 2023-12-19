@@ -1,59 +1,46 @@
 inc "complex.csaw";
 
-str SYMBOLS_HIGH = "@$B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}()?-_+~<>i!lI;:,\"^`'. ";
-str SYMBOLS_LOW = "@%#*+=-:. ";
-str SYMBOLS = SYMBOLS_HIGH;
-
 num MAX_ITER = 100;
-num SAMPLES = 10;
-num WIDTH = 512;
-num HEIGHT = WIDTH;
+num SAMPLES  =  10;
+num WIDTH    = 512;
+num HEIGHT   = WIDTH;
 
 @main: num {
 
-    num xc = num(in("xc: "));
-    num yc = num(in("yc: "));
-    num size = num(in("size: "));
+    num xc = num(readf("xc: "));     ## -0.5
+    num yc = num(readf("yc: "));     ##    0
+    num size = num(readf("size: ")); ##    2
 
-#
-    num xc = -0.5;
-    num yc = 0;
-    num size = 2;
-#
+    img output = img(WIDTH, HEIGHT);
+    bar b = bar(HEIGHT);
 
-    ofstream output = ofstream("output/out.ppm");
-    output.write("P3%n%d %d%n255%n", WIDTH, HEIGHT);
-
+    printf("Starting...");
     for (num j = 0; j < HEIGHT; j++) {
         for (num i = 0; i < WIDTH; i++) {
             num n = 0;
-            for (num s = 0; s < SAMPLES; s++) {
+            parallel(0, SAMPLES, [xc, yc, size, j, i, n](s: num) {
                 num x0 = xc - size / 2 + size * (i + random() - 0.5) / WIDTH;
                 num y0 = yc - size / 2 + size * (j + random() - 0.5) / HEIGHT;
+                ## num x0 = xc - size / 2 + size * i / WIDTH;
+                ## num y0 = yc - size / 2 + size * j / HEIGHT;
                 complex z0 = complex(x0, y0);
                 n += mandel(z0, MAX_ITER);
-            }
+            });
             n = n / (SAMPLES * MAX_ITER);
-            ## out("%c", symbol(n));
             num grey = floor(n * 255.999);
-            output.write("%d %d %d%n", grey, grey, grey);
+            output.set(i, j, 0xff << 24 | (grey & 0xff) << 16 | (grey & 0xff) << 8 | (grey & 0xff));
         }
-        ## out("%n");
+        b.on_progress();
     }
-    
-    output.close();
+    printf("\rDone!            %n");
+
+    output.write("png", "output/mandel.png");
 
     ret 0;
 }
 
 @min: num (a: num, b: num) { ret a < b ? a : b; }
 @max: num (a: num, b: num) { ret a > b ? a : b; }
-
-@symbol: chr (n: num) {
-    num length = SYMBOLS.length();
-    n = max(min(n * length, length), 0);
-    ret SYMBOLS.at(length - n);
-}
 
 @mandel: num (z0: complex, max: num) {
     complex z = z0;
@@ -62,4 +49,19 @@ num HEIGHT = WIDTH;
         z = z.square() + z0;
     }
     ret max;
+}
+
+thing: bar {
+    progress: num,
+    max: num
+}
+
+$bar (max: num) {
+    my.progress = 0;
+    my.max = max;
+}
+
+@on_progress -> bar {
+    my.progress += 1 / my.max;
+    printf("\rProgress: %d%%  ", floor(my.progress * 100));
 }

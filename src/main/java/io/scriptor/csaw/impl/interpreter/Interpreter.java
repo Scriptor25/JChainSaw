@@ -2,10 +2,8 @@ package io.scriptor.csaw.impl.interpreter;
 
 import static io.scriptor.csaw.impl.interpreter.Environment.createAlias;
 import static io.scriptor.csaw.impl.interpreter.Environment.createFunction;
-import static io.scriptor.csaw.impl.interpreter.Environment.createType;
+import static io.scriptor.csaw.impl.interpreter.Environment.createThing;
 import static io.scriptor.csaw.impl.interpreter.Environment.getAndInvoke;
-import static io.scriptor.csaw.impl.interpreter.Environment.getOrigin;
-import static io.scriptor.csaw.impl.interpreter.Environment.hasFunction;
 import static io.scriptor.csaw.impl.interpreter.Environment.isAssignable;
 
 import java.io.File;
@@ -13,37 +11,39 @@ import java.io.FileInputStream;
 import java.util.Arrays;
 
 import io.scriptor.csaw.impl.CSawException;
-import io.scriptor.csaw.impl.Pair;
-import io.scriptor.csaw.impl.Parser;
-import io.scriptor.csaw.impl.expr.AssignExpr;
-import io.scriptor.csaw.impl.expr.BinExpr;
-import io.scriptor.csaw.impl.expr.CallExpr;
-import io.scriptor.csaw.impl.expr.ChrExpr;
-import io.scriptor.csaw.impl.expr.ConExpr;
-import io.scriptor.csaw.impl.expr.Expr;
-import io.scriptor.csaw.impl.expr.IdExpr;
-import io.scriptor.csaw.impl.expr.LambdaExpr;
-import io.scriptor.csaw.impl.expr.MemExpr;
-import io.scriptor.csaw.impl.expr.NumExpr;
-import io.scriptor.csaw.impl.expr.StrExpr;
-import io.scriptor.csaw.impl.expr.UnExpr;
-import io.scriptor.csaw.impl.interpreter.value.ChrValue;
-import io.scriptor.csaw.impl.interpreter.value.LambdaValue;
-import io.scriptor.csaw.impl.interpreter.value.NumValue;
-import io.scriptor.csaw.impl.interpreter.value.ObjValue;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.frontend.Parser;
+import io.scriptor.csaw.impl.frontend.expr.AssignExpr;
+import io.scriptor.csaw.impl.frontend.expr.BinExpr;
+import io.scriptor.csaw.impl.frontend.expr.CallExpr;
+import io.scriptor.csaw.impl.frontend.expr.ChrExpr;
+import io.scriptor.csaw.impl.frontend.expr.ConExpr;
+import io.scriptor.csaw.impl.frontend.expr.ConstExpr;
+import io.scriptor.csaw.impl.frontend.expr.Expr;
+import io.scriptor.csaw.impl.frontend.expr.IdExpr;
+import io.scriptor.csaw.impl.frontend.expr.IndexExpr;
+import io.scriptor.csaw.impl.frontend.expr.LambdaExpr;
+import io.scriptor.csaw.impl.frontend.expr.MemExpr;
+import io.scriptor.csaw.impl.frontend.expr.NumExpr;
+import io.scriptor.csaw.impl.frontend.expr.StrExpr;
+import io.scriptor.csaw.impl.frontend.expr.UnExpr;
+import io.scriptor.csaw.impl.frontend.stmt.AliasStmt;
+import io.scriptor.csaw.impl.frontend.stmt.EnclosedStmt;
+import io.scriptor.csaw.impl.frontend.stmt.ForStmt;
+import io.scriptor.csaw.impl.frontend.stmt.FunStmt;
+import io.scriptor.csaw.impl.frontend.stmt.IfStmt;
+import io.scriptor.csaw.impl.frontend.stmt.IncStmt;
+import io.scriptor.csaw.impl.frontend.stmt.RetStmt;
+import io.scriptor.csaw.impl.frontend.stmt.Stmt;
+import io.scriptor.csaw.impl.frontend.stmt.ThingStmt;
+import io.scriptor.csaw.impl.frontend.stmt.VarStmt;
+import io.scriptor.csaw.impl.frontend.stmt.WhileStmt;
+import io.scriptor.csaw.impl.interpreter.value.ConstChr;
+import io.scriptor.csaw.impl.interpreter.value.ConstNull;
+import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
+import io.scriptor.csaw.impl.interpreter.value.NamedValue;
 import io.scriptor.csaw.impl.interpreter.value.Value;
-import io.scriptor.csaw.impl.stmt.AliasStmt;
-import io.scriptor.csaw.impl.stmt.EnclosedStmt;
-import io.scriptor.csaw.impl.stmt.ForStmt;
-import io.scriptor.csaw.impl.stmt.FunStmt;
-import io.scriptor.csaw.impl.stmt.IfStmt;
-import io.scriptor.csaw.impl.stmt.IncStmt;
-import io.scriptor.csaw.impl.stmt.RetStmt;
-import io.scriptor.csaw.impl.stmt.Stmt;
-import io.scriptor.csaw.impl.stmt.ThingStmt;
-import io.scriptor.csaw.impl.stmt.VarStmt;
-import io.scriptor.csaw.impl.stmt.WhileStmt;
 import io.scriptor.java.ErrorUtil;
 
 public class Interpreter {
@@ -53,7 +53,7 @@ public class Interpreter {
 
     public static Value evaluate(Environment env, Stmt stmt) {
         if (stmt == null)
-            return null;
+            return new ConstNull("cannot evaluate null stmt");
 
         if (stmt instanceof EnclosedStmt)
             return evaluate(env, (EnclosedStmt) stmt);
@@ -87,25 +87,25 @@ public class Interpreter {
         final var environment = new Environment(env);
         for (final var s : stmt.body) {
             final var value = evaluate(environment, s);
-            if (value != null && value.isReturn())
+            if (value.isReturn())
                 return value;
         }
-        return null;
+        return new ConstNull("no return in enclosed stmt");
     }
 
     public static Value evaluate(Environment env, AliasStmt stmt) {
         createAlias(stmt.alias, stmt.origin);
-        return null;
+        return new ConstNull("alias stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, ForStmt stmt) {
         final var e = new Environment(env);
-        for (evaluate(e, stmt.begin); evaluate(e, stmt.condition).asBoolean(); evaluate(e, stmt.loop)) {
+        for (evaluate(e, stmt.begin); evaluate(e, stmt.condition).asNum().getBool(); evaluate(e, stmt.loop)) {
             final var value = evaluate(e, stmt.body);
-            if (value != null && value.isReturn())
+            if (value.isReturn())
                 return value;
         }
-        return null;
+        return new ConstNull("no return in for stmt");
     }
 
     public static Value evaluate(Environment env, FunStmt stmt) {
@@ -117,64 +117,58 @@ public class Interpreter {
                 stmt.vararg,
                 stmt.member,
                 stmt.body);
-        return null;
+        return new ConstNull("function stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, IfStmt stmt) {
-
         final var condition = evaluate(env, stmt.condition);
-        if (condition.asBoolean())
+        if (condition.asNum().getBool())
             return evaluate(env, stmt.thenBody);
-
-        if (stmt.elseBody != null)
-            return evaluate(env, stmt.elseBody);
-
-        return null;
+        return evaluate(env, stmt.elseBody);
     }
 
     public static Value evaluate(Environment env, IncStmt stmt) {
         final var path = env.getPath();
         final var file = new File(path, stmt.path);
-        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env.setPath(file.getParent()));
+        Parser.parse(ErrorUtil.handle(() -> new FileInputStream(file)), env.setPath(file.getParent()), false);
         env.setPath(path);
-
-        return null;
+        return new ConstNull("inc stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, RetStmt stmt) {
-        return stmt.value == null ? null : evaluate(env, stmt.value).isReturn(true);
+        return evaluate(env, stmt.value).setReturn(true);
     }
 
     public static Value evaluate(Environment env, ThingStmt stmt) {
-        createType(stmt.group, stmt.name, stmt.fields);
-        return null;
+        createThing(stmt.group, stmt.name, stmt.fields);
+        return new ConstNull("thing stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, VarStmt stmt) {
-        var value = stmt.value == null ? null : evaluate(env, stmt.value);
-
-        if (value != null && !isAssignable(value.getType(), stmt.type))
-            throw new CSawException(
-                    String.format("cannot assign value of type '%s' to type '%s'", value.getType(), stmt.type));
-        else if (value == null)
+        Value value;
+        if (stmt.value == null)
             value = Value.makeValue(env, stmt.type, false, false);
+        else if (!isAssignable((value = evaluate(env, stmt.value)).getType(), stmt.type))
+            throw new CSawException("cannot assign value of type '%s' to type '%s'", value.getType(), stmt.type);
 
         env.createVariable(stmt.name, stmt.type, value);
-        return null;
+        return new ConstNull("var stmt does not return anything");
     }
 
     public static Value evaluate(Environment env, WhileStmt stmt) {
         final var e = new Environment(env);
-        while (evaluate(e, stmt.condition).asBoolean()) {
+        while (evaluate(e, stmt.condition).asNum().getBool()) {
             final var value = evaluate(e, stmt.body);
-            if (value != null && value.isReturn())
+            if (value.isReturn())
                 return value;
         }
-
-        return null;
+        return new ConstNull("no return in while stmt");
     }
 
     public static Value evaluate(Environment env, Expr expr) {
+        if (expr == null)
+            return new ConstNull("cannot evaluate null expr");
+
         if (expr instanceof AssignExpr)
             return evaluate(env, (AssignExpr) expr);
         if (expr instanceof BinExpr)
@@ -185,8 +179,12 @@ public class Interpreter {
             return evaluate(env, (ChrExpr) expr);
         if (expr instanceof ConExpr)
             return evaluate(env, (ConExpr) expr);
+        if (expr instanceof ConstExpr)
+            return ((ConstExpr) expr).value();
         if (expr instanceof IdExpr)
             return evaluate(env, (IdExpr) expr);
+        if (expr instanceof IndexExpr)
+            return evaluate(env, (IndexExpr) expr);
         if (expr instanceof LambdaExpr)
             return evaluate(env, (LambdaExpr) expr);
         if (expr instanceof MemExpr)
@@ -202,21 +200,30 @@ public class Interpreter {
     }
 
     public static Value evaluate(Environment env, AssignExpr expr) {
-        if (expr.object instanceof IdExpr)
-            return env.setVariable(((IdExpr) expr.object).value, evaluate(env, expr.value));
-        if (expr.object instanceof MemExpr) {
-            final var object = (ObjValue) evaluate(env, ((MemExpr) expr.object).object);
-            return object.setField(((MemExpr) expr.object).member, evaluate(env, expr.value));
+        final var value = evaluate(env, expr.value());
+
+        if (expr.object() instanceof IdExpr e)
+            return env.setVariable(e.value(), value);
+
+        if (expr.object() instanceof MemExpr e)
+            return evaluate(env, e.object()).asThing().setField(e.member(), value);
+
+        if (expr.object() instanceof IndexExpr e) {
+            final var ref = evaluate(env, e.expr());
+            final var idx = evaluate(env, e.index());
+            if (ref.isRef())
+                return ref.asRef().set(idx.asNum().getInt(), value);
+            return getAndInvoke(ref, "[]", idx, value);
         }
 
         throw new CSawException("unsupported assign operation %s", expr);
     }
 
     public static Value evaluate(Environment env, BinExpr expr) {
-        final var left = evaluate(env, expr.left);
-        final var right = evaluate(env, expr.right);
+        final var left = evaluate(env, expr.left());
+        final var right = evaluate(env, expr.right());
 
-        return switch (expr.operator) {
+        return switch (expr.operator()) {
 
             case "&" -> Value.binAnd(env, left, right);
             case "&&" -> Value.and(env, left, right);
@@ -234,38 +241,36 @@ public class Interpreter {
             case "/" -> Value.div(env, left, right);
             case "%" -> Value.mod(env, left, right);
             case "^" -> Value.xor(env, left, right);
-            case "[]" -> Value.index(env, left, right);
+            case "<<" -> Value.sl(env, left, right);
+            case ">>" -> Value.sr(env, left, right);
 
             default -> throw new CSawException(
                     "operator '%s' not supported for types '%s' and '%s'",
-                    expr.operator,
+                    expr.operator(),
                     left.getType(),
                     right.getType());
         };
     }
 
     public static Value evaluate(Environment env, CallExpr expr) {
-        final var args = new Value[expr.arguments.length];
-        final var argTypes = new String[expr.arguments.length];
+        final var args = new Value[expr.arguments().length];
+        final var argTypes = new Type[expr.arguments().length];
         for (int i = 0; i < args.length; i++) {
-            args[i] = evaluate(env, expr.arguments[i]);
+            args[i] = evaluate(env, expr.arguments()[i]);
             argTypes[i] = args[i].getType();
         }
 
         String name = null;
-        Value member = null;
+        Value member = new ConstNull("in case the function has no member");
 
-        if (expr.function instanceof IdExpr)
-            name = ((IdExpr) expr.function).value;
-        else if (expr.function instanceof MemExpr) {
-            member = evaluate(env, ((MemExpr) expr.function).object);
-            name = ((MemExpr) expr.function).member;
+        if (expr.function() instanceof IdExpr e)
+            name = e.value();
+        else if (expr.function() instanceof MemExpr e) {
+            member = evaluate(env, e.object());
+            if (member.isNull())
+                throw new CSawException("failed to evaluate object of member expression");
+            name = e.member();
         }
-
-        final var mem = member != null ? getOrigin(member.getType()) : null;
-
-        if (hasFunction(mem, name, argTypes))
-            return getAndInvoke(member, name, args);
 
         if (env.hasVariable(name)) {
             final var lambda = env.getVariable(name);
@@ -273,56 +278,62 @@ public class Interpreter {
                 return lambda.asLambda().invoke(args);
         }
 
-        throw new CSawException(
-                "undefined call to '%s', member of '%s', arguments %s",
-                name,
-                member,
-                Arrays.toString(args));
+        return getAndInvoke(member, name, args);
     }
 
     public static Value evaluate(Environment env, ChrExpr expr) {
-        return new ChrValue(expr.value);
+        return new ConstChr(expr.value());
     }
 
     public static Value evaluate(Environment env, ConExpr expr) {
-        return evaluate(env, expr.condition).asBoolean()
-                ? evaluate(env, expr.thenExpr)
-                : evaluate(env, expr.elseExpr);
+        return evaluate(env, expr.condition()).asNum().getBool()
+                ? evaluate(env, expr.thenExpr())
+                : evaluate(env, expr.elseExpr());
     }
 
     public static Value evaluate(Environment env, IdExpr expr) {
-        return env.getVariable(expr.value);
+        return env.getVariable(expr.value());
+    }
+
+    public static Value evaluate(Environment env, IndexExpr expr) {
+        final var value = evaluate(env, expr.expr());
+        final var index = evaluate(env, expr.index());
+
+        if (value.isRef())
+            return value.asRef().get(index.asNum().getInt());
+
+        return getAndInvoke(value, "[]", index);
     }
 
     public static Value evaluate(Environment env, LambdaExpr expr) {
-        final var passed = Arrays.stream(expr.passed)
-                .map(e -> new Pair<>(e.value, evaluate(env, e)))
-                .toArray(n -> new Pair[n]);
-        return new LambdaValue(passed, expr.parameters, expr.body);
+        final var passed = Arrays.stream(expr.passed())
+                .map(e -> new NamedValue(e.value(), evaluate(env, e)))
+                .toArray(n -> new NamedValue[n]);
+        return new ConstLambda(passed, expr.parameters(), expr.body());
     }
 
     public static Value evaluate(Environment env, MemExpr expr) {
-        return ((ObjValue) evaluate(env, expr.object)).getField(expr.member);
+        return evaluate(env, expr.object()).asThing().getField(expr.member());
     }
 
     public static Value evaluate(Environment env, NumExpr expr) {
-        return new NumValue(expr.value);
+        return new ConstNum(expr.value());
     }
 
     public static Value evaluate(Environment env, StrExpr expr) {
-        return new StrValue(expr.value);
+        return new ConstStr(expr.value());
     }
 
     public static Value evaluate(Environment env, UnExpr expr) {
-        final var value = evaluate(env, expr.value);
+        final var value = evaluate(env, expr.value());
 
-        return switch (expr.operator) {
+        return switch (expr.operator()) {
 
             case "-" -> Value.neg(env, value);
             case "!" -> Value.not(env, value);
             case "~" -> Value.inv(env, value);
 
-            default -> throw new CSawException("unsupported operator '%s'", expr.operator);
+            default -> throw new CSawException("unsupported operator '%s'", expr.operator());
         };
     }
 }

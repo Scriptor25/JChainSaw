@@ -2,7 +2,9 @@ package io.scriptor.csaw.lang;
 
 import static io.scriptor.java.ErrorUtil.handleVoid;
 
-import io.scriptor.csaw.impl.interpreter.value.LambdaValue;
+import io.scriptor.csaw.impl.interpreter.Type;
+import io.scriptor.csaw.impl.interpreter.value.ConstLambda;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
@@ -11,12 +13,17 @@ public class CSawThread extends Value {
 
     private final Thread mThread;
 
-    public CSawThread(LambdaValue function) {
+    public CSawThread() {
+        mThread = null;
+    }
+
+    public CSawThread(ConstLambda function) {
         mThread = new Thread(() -> function.invoke(), "CSawThread");
     }
 
-    public void start() {
+    public CSawThread start() {
         mThread.start();
+        return this;
     }
 
     public void join() {
@@ -28,18 +35,26 @@ public class CSawThread extends Value {
     }
 
     @Override
-    protected Thread value() {
+    public ConstNum asNum() {
+        return new ConstNum(mThread != null);
+    }
+
+    public ConstNum isAlive() {
+        return new ConstNum(mThread.isAlive());
+    }
+
+    public ConstNum isInterrupted() {
+        return new ConstNum(mThread.isInterrupted());
+    }
+
+    @Override
+    protected Type type() {
+        return Type.get("thrd");
+    }
+
+    @Override
+    protected Object object() {
         return mThread;
-    }
-
-    @Override
-    protected String type() {
-        return "thrd";
-    }
-
-    @Override
-    protected boolean bool() {
-        return mThread.isAlive();
     }
 
     @Override

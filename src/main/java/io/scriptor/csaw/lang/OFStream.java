@@ -6,8 +6,9 @@ import static io.scriptor.java.ErrorUtil.handleVoid;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 
-import io.scriptor.csaw.impl.interpreter.value.NumValue;
-import io.scriptor.csaw.impl.interpreter.value.StrValue;
+import io.scriptor.csaw.impl.interpreter.Type;
+import io.scriptor.csaw.impl.interpreter.value.ConstNum;
+import io.scriptor.csaw.impl.interpreter.value.ConstStr;
 import io.scriptor.csaw.impl.interpreter.value.Value;
 import io.scriptor.java.CSawNative;
 
@@ -17,19 +18,20 @@ public class OFStream extends Value {
     private final String mFilename;
     private final BufferedWriter mWriter;
 
-    public OFStream(StrValue filename) {
+    public OFStream(ConstStr filename) {
         mFilename = filename.get();
         mWriter = new BufferedWriter(handle(() -> new FileWriter(mFilename)));
     }
 
-    public NumValue open() {
-        return new NumValue(mWriter != null);
+    @Override
+    public ConstNum asNum() {
+        return new ConstNum(mWriter != null);
     }
 
-    public void write(StrValue fmt, Value... args) {
-        final var objArgs = new Object[args == null ? 0 : args.length];
+    public void write(ConstStr fmt, Value... args) {
+        final var objArgs = new Object[args.length];
         for (int i = 0; i < objArgs.length; i++)
-            objArgs[i] = args[i].getValue();
+            objArgs[i] = args[i].getObject();
         handleVoid(() -> mWriter.write(String.format(fmt.get(), objArgs)));
     }
 
@@ -38,18 +40,13 @@ public class OFStream extends Value {
     }
 
     @Override
-    protected BufferedWriter value() {
+    protected Type type() {
+        return Type.get("ofstream");
+    }
+
+    @Override
+    protected Object object() {
         return mWriter;
-    }
-
-    @Override
-    protected String type() {
-        return "ofstream";
-    }
-
-    @Override
-    protected boolean bool() {
-        return mWriter != null;
     }
 
     @Override

@@ -77,7 +77,7 @@ $point3 (x: num, y: num, z: num) { my = vec3(x, y, z); }
 ## Vector Utility Functions
 
 @out (v: vec3) {
-    out("[ %f %f %f ]", v.x, v.y, v.z);
+    printf("[ %f %f %f ]", v.x, v.y, v.z);
 }
 
 @(+): vec3 (u: vec3, v: vec3) {
