@@ -23,6 +23,16 @@
         },
         {
             "type": "java",
+            "name": "CSaw Fib",
+            "request": "launch",
+            "mainClass": "io.scriptor.CSaw",
+            "projectName": "csaw",
+            "args": [
+                "csaw/fib/main.csaw"
+            ]
+        },
+        {
+            "type": "java",
             "name": "CSaw Ghost",
             "request": "launch",
             "mainClass": "io.scriptor.CSaw",
