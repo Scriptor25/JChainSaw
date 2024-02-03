@@ -7,6 +7,8 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.scriptor.csaw.impl.frontend.Parser;
 import io.scriptor.csaw.impl.interpreter.Environment;
@@ -19,20 +21,36 @@ import io.scriptor.java.ErrorUtil;
 public class CSaw {
 
     public static void main(String[] args) {
-        if (args.length == 0) {
+
+        final Map<String, String> options = new HashMap<>();
+
+        int i = 0;
+        for (; i < args.length; i++) {
+            final var arg = args[i];
+            if (!arg.startsWith("-"))
+                break;
+
+            final var split = arg.split("=");
+            if (split.length == 1)
+                options.put(arg, "");
+            else
+                options.put(split[0], split[1]);
+        }
+
+        if (args.length == 0 || options.containsKey("--help") || options.containsKey("-h")) {
+            System.out.println("csaw [OPTIONS...] [FILE] [ARGS...]");
+            System.out.println("Options:");
+            System.out.println("--help, -h: show csaw help");
+            System.out.println("--shell, -sh: open csaw shell");
+            return;
+        }
+
+        if (options.containsKey("--shell") || options.containsKey("-sh")) {
             shell();
             return;
         }
 
-        switch (args[0]) {
-            case "-h":
-            case "--help":
-                System.out.println("csaw shell: csaw");
-                System.out.println("run file: csaw <file> [args]");
-                return;
-        }
-
-        run(args[0], Arrays.copyOfRange(args, 1, args.length));
+        run(args[i], Arrays.copyOfRange(args, i + 1, args.length));
     }
 
     public static void shell() {
@@ -48,19 +66,20 @@ public class CSaw {
                 case "clear":
                     System.out.print("\033\143");
                     continue;
-                case "env":
+                case "path":
                     System.out.println(env.getPath());
                     continue;
                 case "reset":
                     Environment.reset();
                     Collector.collect(env);
                     continue;
-            }
-
-            try {
-                Parser.parse(new ByteArrayInputStream(input.getBytes()), env, true);
-            } catch (Throwable t) {
-                t.printStackTrace();
+                default:
+                    try {
+                        Parser.parse(new ByteArrayInputStream(input.getBytes()), env, true);
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                    }
+                    break;
             }
         }
     }

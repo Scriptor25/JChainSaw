@@ -53,6 +53,8 @@ public class Parser {
             if (output)
                 System.out.println(value);
         }
+
+        handleVoid(() -> stream.close());
     }
 
     private final BufferedReader mReader;
